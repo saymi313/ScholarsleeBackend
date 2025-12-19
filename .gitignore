@@ -135,6 +135,7 @@ dist-ssr
 uploads/
 
 # Frontend (separate repository)
-Frontend/
+# Frontend/
+
 
 # End of https://www.gitignore.io/api/node

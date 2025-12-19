@@ -1,0 +1,91 @@
+const express = require('express')
+const cors = require('cors')
+const { runGoogleMeetGeneration } = require('./runSeleniumScript')
+
+const app = express()
+const PORT = process.env.PORT || 3001
+
+// Middleware
+app.use(cors())
+app.use(express.json())
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', message: 'Meeting service is running' })
+})
+
+// Generate meeting endpoint
+app.post('/api/generate-meeting', async (req, res) => {
+  try {
+    console.log('Received meeting generation request:', req.body)
+    
+    // Validate required fields
+    const { menteeName, topic, date, time } = req.body
+    
+    if (!menteeName || !topic || !date || !time) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields',
+        message: 'Please provide menteeName, topic, date, and time'
+      })
+    }
+    
+    // Run the Selenium script
+    const result = await runGoogleMeetGeneration(req.body)
+    
+    if (result.success) {
+      console.log('Meeting generated successfully:', result.meetingLink)
+      res.json(result)
+    } else {
+      console.error('Meeting generation failed:', result.error)
+      res.status(500).json(result)
+    }
+    
+  } catch (error) {
+    console.error('Server error:', error)
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: 'Internal server error'
+    })
+  }
+})
+
+// Get meeting status endpoint
+app.get('/api/meeting-status/:meetingId', (req, res) => {
+  // This could be used to check meeting status in the future
+  res.json({
+    success: true,
+    meetingId: req.params.meetingId,
+    status: 'active',
+    message: 'Meeting is active'
+  })
+})
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error('Unhandled error:', error)
+  res.status(500).json({
+    success: false,
+    error: 'Internal server error',
+    message: 'Something went wrong'
+  })
+})
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Not found',
+    message: 'Endpoint not found'
+  })
+})
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Meeting service running on port ${PORT}`)
+  console.log(`📋 Health check: http://localhost:${PORT}/health`)
+  console.log(`🔗 Generate meeting: POST http://localhost:${PORT}/api/generate-meeting`)
+})
+
+export default app

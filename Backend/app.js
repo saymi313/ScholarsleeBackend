@@ -21,8 +21,8 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] 
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://scholarslee.com', 'https://www.scholarslee.com', 'http://localhost:3000']
     : ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true
 }));
@@ -71,8 +71,16 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Ignore favicon requests
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
+// Serve uploaded files as static assets
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // API Routes
 // Shared Routes
+app.use('/api/upload', require('./src/shared/routes/uploadRoutes')); // File upload routes
 app.use('/api/users', require('./src/shared/routes/userRoutes'));
 app.use('/api/notifications', require('./src/shared/routes/notificationRoutes'));
 app.use('/api/chat', require('./src/shared/routes/chatRoutes')); // Chat routes for both mentors and mentees
