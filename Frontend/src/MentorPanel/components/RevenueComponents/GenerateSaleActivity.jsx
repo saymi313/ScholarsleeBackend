@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 const formatCurrency = (value = 0) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value / 100)
 
 const GeneralSaleActivity = ({ data = [], loading }) => {
   const [timePeriod, setTimePeriod] = useState("1 Year")

@@ -76,7 +76,7 @@ export default function HeroSection() {
           <Button
             className="w-full sm:w-auto text-white px-8 py-3 text-lg font-semibold primary-hover"
             style={{ backgroundColor: "#5D38DE" }}
-            onClick={() => navigate('/mentees/mentor')}
+            onClick={() => navigate('/mentees/mentors')}
           >
             Explore Mentors
           </Button>

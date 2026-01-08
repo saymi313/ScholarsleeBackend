@@ -7,9 +7,9 @@ const formatCurrency = (value = 0, currency = 'usd') => {
       style: 'currency',
       currency: currency.toUpperCase(),
       maximumFractionDigits: 0,
-    }).format(value)
+    }).format(value / 100)
   } catch {
-    return `$${Number(value || 0).toLocaleString()}`
+    return `$${Number((value || 0) / 100).toLocaleString()}`
   }
 }
 

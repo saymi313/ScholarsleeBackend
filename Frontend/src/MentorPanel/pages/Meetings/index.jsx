@@ -16,7 +16,7 @@ import meetingService from "./meetingService"
 const Meetings = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDate, setSelectedDate] = useState(null)
-  
+
   // Meeting scheduling states
   const [showSchedulingModal, setShowSchedulingModal] = useState(false)
   const [showConfirmationModal, setShowConfirmationModal] = useState(false)
@@ -25,7 +25,7 @@ const Meetings = () => {
   const [meetingDetails, setMeetingDetails] = useState(null)
   const [generatedMeetingLink, setGeneratedMeetingLink] = useState("")
   const [loaderStep, setLoaderStep] = useState(1)
-  
+
   // Meeting details popup states
   const [showMeetingDetails, setShowMeetingDetails] = useState(false)
   const [selectedDateMeetings, setSelectedDateMeetings] = useState([])
@@ -37,7 +37,7 @@ const Meetings = () => {
     try {
       setShowLoader(true)
       setLoaderStep(1)
-      
+
       // Validate meeting details
       const validationErrors = meetingService.validateMeetingDetails(details)
       if (validationErrors.length > 0) {
@@ -45,7 +45,7 @@ const Meetings = () => {
         alert(`Validation errors: ${validationErrors.join(', ')}`)
         return
       }
-      
+
       // Simulate step progression
       const stepInterval = setInterval(() => {
         setLoaderStep(prev => {
@@ -55,25 +55,25 @@ const Meetings = () => {
           return prev
         })
       }, 800)
-      
+
       // Call the meeting service
       const result = await meetingService.generateMeetingLink(details)
-      
+
       clearInterval(stepInterval)
       setLoaderStep(4)
-      
+
       if (result.success) {
         setGeneratedMeetingLink(result.meetingLink)
         setShowLoader(false)
         setShowLinkDisplay(true)
         console.log('Meeting generated:', result.meetingLink)
-        
+
         // Refresh calendar to show new meeting
         setCalendarKey(prev => prev + 1)
       } else {
         throw new Error(result.error || 'Failed to generate meeting')
       }
-      
+
     } catch (error) {
       console.error('Error generating meeting link:', error)
       setShowLoader(false)
@@ -177,22 +177,26 @@ const Meetings = () => {
             </div>
 
             <div className="lg:w-80 w-full">
-              <CalendarWidget 
+              <CalendarWidget
                 key={calendarKey}
-                selectedDate={selectedDate} 
+                selectedDate={selectedDate}
                 setSelectedDate={setSelectedDate}
                 onDateClick={handleDateClick}
               />
             </div>
           </div>
-          
+
           <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 mt-4 sm:mt-6">
             <div className="flex-1 min-w-0">
-              <SessionsTable searchTerm={searchTerm} selectedDate={selectedDate} />
+              <SessionsTable
+                searchTerm={searchTerm}
+                selectedDate={selectedDateKey}
+                refreshTrigger={calendarKey}
+              />
             </div>
 
             <div className="lg:w-80 w-full">
-              <UpcomingMeetings />
+              <UpcomingMeetings refreshTrigger={calendarKey} />
             </div>
           </div>
         </main>

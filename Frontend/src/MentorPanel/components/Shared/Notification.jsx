@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react'
 
-const Notification = ({ 
-  type = 'success', 
-  message, 
-  isVisible, 
-  onClose, 
-  duration = 3000 
+const Notification = ({
+  type = 'success',
+  message,
+  isVisible,
+  onClose,
+  duration = 3000,
+  position = 'fixed'
 }) => {
   const [show, setShow] = useState(isVisible)
 
@@ -53,10 +54,13 @@ const Notification = ({
     }
   }
 
+  const positionClasses = position === 'fixed'
+    ? 'fixed top-4 right-4 z-50'
+    : 'absolute top-4 right-4 z-50'
+
   return (
-    <div className={`fixed top-4 right-4 z-50 max-w-sm w-full bg-[#1a1a1a] border rounded-lg p-4 shadow-lg transform transition-all duration-300 ${
-      show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-    } ${getStyles()}`}>
+    <div className={`${positionClasses} max-w-sm w-full bg-[#1a1a1a] border rounded-lg p-4 shadow-lg transform transition-all duration-300 ${show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+      } ${getStyles()}`}>
       <div className="flex items-start gap-3">
         {getIcon()}
         <div className="flex-1">

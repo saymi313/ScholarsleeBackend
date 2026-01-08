@@ -96,7 +96,6 @@ export default function ContactForm() {
             name="lastName"
             value={form.lastName}
             onChange={handle}
-            placeholder="Doe"
             className={field}
             aria-label="Last Name"
           />

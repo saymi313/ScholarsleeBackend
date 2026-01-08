@@ -18,7 +18,8 @@ const register = async (req, res) => {
       return sendValidationError(res, errors.array());
     }
 
-    const { email, password, role, firstName, lastName } = req.body;
+    const { password, role, firstName, lastName } = req.body;
+    const email = req.body.email.toLowerCase();
 
     // Check if user already exists in User collection
     const existingUser = await User.findOne({ email });
@@ -62,13 +63,36 @@ const register = async (req, res) => {
       const emailDuration = ((Date.now() - emailStartTime) / 1000).toFixed(2);
 
       if (emailResult.success) {
-        console.log(`✅ Verification email sent successfully in ${emailDuration}s`);
+        console.log('\n' + '='.repeat(60));
+        console.log('🎉 OTP SENT SUCCESSFULLY! 🎉');
+        console.log('='.repeat(60));
+        console.log(`📧 To: ${email}`);
+        console.log(`🔐 OTP: ${verificationOTP}`);
+        console.log(`⏱️  Duration: ${emailDuration}s`);
+        console.log(`📬 Message ID: ${emailResult.messageId}`);
+        console.log('='.repeat(60) + '\n');
+
+        // Check if email was accepted by server
+        if (emailResult.rejected && emailResult.rejected.length > 0) {
+          console.warn('⚠️  Email was rejected by server:', emailResult.rejected);
+        }
       } else {
-        console.error(`⚠️ Email service returned failure: ${emailResult.error}`);
+        console.error('\n' + '='.repeat(60));
+        console.error('❌ OTP EMAIL FAILED TO SEND');
+        console.error('='.repeat(60));
+        console.error(`📧 To: ${email}`);
+        console.error(`⏱️  Duration: ${emailDuration}s`);
+        console.error(`❌ Error: ${emailResult.error}`);
+        console.error('📋 Error Code:', emailResult.errorCode);
+        console.error('='.repeat(60) + '\n');
+
+        // Still allow registration to complete - user can use "Resend OTP"
+        console.log('⚠️  User can request OTP resend later');
       }
     } catch (emailError) {
       const emailDuration = ((Date.now() - emailStartTime) / 1000).toFixed(2);
       console.error(`❌ Failed to send verification email after ${emailDuration}s:`, emailError.message);
+      console.error('📋 Full error:', emailError);
       // Pending user is created but email failed. They can use "Resend OTP".
     }
 
@@ -76,7 +100,7 @@ const register = async (req, res) => {
     console.log('✅ Registration complete, sending response');
     res.status(201).json({
       success: true,
-      message: 'Registration successful. Please check your email for the verification code.',
+      message: 'Registration successful. Please check your email for the verification code. If you don\'t see it, check your spam/junk folder.',
       data: {
         user: {
           email: pendingUser.email,
@@ -101,21 +125,27 @@ const login = async (req, res) => {
       return sendValidationError(res, errors.array());
     }
 
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = req.body.email.toLowerCase();
 
     // Find user and include password for comparison
+    console.log('🔍 Login attempt for:', email);
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
+      console.log('❌ User not found:', email);
       return sendErrorResponse(res, ERROR_MESSAGES.INVALID_CREDENTIALS, 401);
     }
+    console.log('✅ User found:', user._id, 'Role:', user.role);
 
     // Check if user is active
     if (!user.isActive) {
+      console.log('❌ User account is deactivated');
       return sendErrorResponse(res, 'Account is deactivated', 401);
     }
 
     // Check if user is verified (only for local auth)
     if (user.authProvider === 'local' && !user.isVerified) {
+      console.log('❌ User email not verified');
       return sendErrorResponse(res, 'Please verify your email address before logging in', 403, {
         isVerified: false,
         email: user.email
@@ -125,8 +155,10 @@ const login = async (req, res) => {
     // Compare password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
+      console.log('❌ Invalid password for:', email);
       return sendErrorResponse(res, ERROR_MESSAGES.INVALID_CREDENTIALS, 401);
     }
+    console.log('✅ Password valid');
 
     // Generate JWT token
     const token = generateToken({
@@ -319,12 +351,29 @@ const resendVerificationEmail = async (req, res) => {
 
       // Send email
       try {
-        await emailService.sendVerificationEmail(pendingUser.email, verificationOTP);
-        console.log('✅ Verification code resent successfully');
-        return sendSuccessResponse(res, 'Verification code sent successfully');
+        const emailResult = await emailService.sendVerificationEmail(pendingUser.email, verificationOTP);
+
+        if (emailResult.success) {
+          console.log('\n' + '='.repeat(60));
+          console.log('🔄 OTP RESENT SUCCESSFULLY! 🔄');
+          console.log('='.repeat(60));
+          console.log(`📧 To: ${pendingUser.email}`);
+          console.log(`🔐 OTP: ${verificationOTP}`);
+          console.log(`📬 Message ID: ${emailResult.messageId}`);
+          console.log('='.repeat(60) + '\n');
+          return sendSuccessResponse(res, 'Verification code sent successfully. Please check your email and spam/junk folder.');
+        } else {
+          console.error('\n' + '='.repeat(60));
+          console.error('❌ OTP RESEND FAILED');
+          console.error('='.repeat(60));
+          console.error(`📧 To: ${pendingUser.email}`);
+          console.error(`❌ Error: ${emailResult.error}`);
+          console.error('='.repeat(60) + '\n');
+          return sendErrorResponse(res, 'Failed to send verification email. Please try again.', 500);
+        }
       } catch (emailError) {
         console.error('❌ Failed to send verification email:', emailError);
-        return sendErrorResponse(res, 'Failed to send verification email', 500);
+        return sendErrorResponse(res, 'Failed to send verification email. Please try again.', 500);
       }
     }
 
@@ -353,12 +402,29 @@ const resendVerificationEmail = async (req, res) => {
 
     // Send email
     try {
-      await emailService.sendVerificationEmail(user.email, verificationOTP);
-      console.log('✅ Verification code resent successfully');
-      return sendSuccessResponse(res, 'Verification code sent successfully');
+      const emailResult = await emailService.sendVerificationEmail(user.email, verificationOTP);
+
+      if (emailResult.success) {
+        console.log('\n' + '='.repeat(60));
+        console.log('🔄 OTP RESENT SUCCESSFULLY! 🔄');
+        console.log('='.repeat(60));
+        console.log(`📧 To: ${user.email}`);
+        console.log(`🔐 OTP: ${verificationOTP}`);
+        console.log(`📬 Message ID: ${emailResult.messageId}`);
+        console.log('='.repeat(60) + '\n');
+        return sendSuccessResponse(res, 'Verification code sent successfully. Please check your email and spam/junk folder.');
+      } else {
+        console.error('\n' + '='.repeat(60));
+        console.error('❌ OTP RESEND FAILED');
+        console.error('='.repeat(60));
+        console.error(`📧 To: ${user.email}`);
+        console.error(`❌ Error: ${emailResult.error}`);
+        console.error('='.repeat(60) + '\n');
+        return sendErrorResponse(res, 'Failed to send verification email. Please try again.', 500);
+      }
     } catch (emailError) {
       console.error('❌ Failed to send verification email:', emailError);
-      return sendErrorResponse(res, 'Failed to send verification email', 500);
+      return sendErrorResponse(res, 'Failed to send verification email. Please try again.', 500);
     }
 
   } catch (error) {

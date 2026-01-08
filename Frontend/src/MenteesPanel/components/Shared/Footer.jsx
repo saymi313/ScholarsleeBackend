@@ -86,7 +86,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center space-x-2">
                 <span className="w-1.5 h-1.5 bg-purple-300 rounded-full"></span>
-                <a href="/mentees/mentor" className="text-purple-100 text-sm hover:text-white hover:translate-x-1 inline-block transition-all duration-300">
+                <a href="/mentees/mentors" className="text-purple-100 text-sm hover:text-white hover:translate-x-1 inline-block transition-all duration-300">
                   Mentors
                 </a>
               </li>

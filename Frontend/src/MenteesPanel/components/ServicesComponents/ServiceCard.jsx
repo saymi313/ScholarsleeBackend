@@ -16,7 +16,7 @@ export default function ServiceCard({ service }) {
   if (!service) {
     return (
       <article className="group rounded-xl border border-zinc-100 bg-white overflow-hidden shadow-sm">
-        <div className="aspect-[4/3] bg-gray-100 flex items-center justify-center">
+        <div className="aspect-[16/9] bg-gray-100 flex items-center justify-center">
           <div className="text-gray-400">Loading...</div>
         </div>
         <div className="p-4">
@@ -29,7 +29,13 @@ export default function ServiceCard({ service }) {
   }
 
   const handleServiceClick = () => {
-    navigate(`/service-details/${service._id}`)
+    // If we have both mentor slug and service slug, use pretty URL
+    if (service.mentorProfile?.slug && service.slug) {
+      navigate(`/service-details/${service.mentorProfile.slug}/${service.slug}`)
+    } else {
+      // Fallback to ID
+      navigate(`/service-details/${service._id}`)
+    }
   }
 
   const formatPrice = (packages) => {
@@ -54,12 +60,12 @@ export default function ServiceCard({ service }) {
   }
 
   return (
-    <article 
+    <article
       className="group rounded-xl border border-zinc-100 bg-white overflow-hidden shadow-sm hover:shadow transition cursor-pointer"
       onClick={handleServiceClick}
     >
       {/* Cover */}
-      <div className="relative aspect-[4/3] bg-[#5D38DE]">
+      <div className="relative aspect-[16/9] bg-[#5D38DE]">
         <img
           src={getServiceImage()}
           alt={service.title}
@@ -80,7 +86,7 @@ export default function ServiceCard({ service }) {
             {service.title}
           </h3>
         </div>
-        
+
         <p className="text-sm text-zinc-600 line-clamp-2 mb-2">
           {service.description}
         </p>

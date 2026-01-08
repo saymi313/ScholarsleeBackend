@@ -1,34 +1,50 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Edit, Trash2, Star, Clock, DollarSign, X } from "lucide-react"
-import { profileAPI } from "../../../utils/api"
+import { Plus, Edit, Trash2, Star, Clock, DollarSign, X, Image as ImageIcon, Loader2 } from "lucide-react"
+import { profileAPI, servicesAPI } from "../../../utils/api"
 
 const ServicesTab = () => {
   const [services, setServices] = useState([])
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await profileAPI.mentor.get()
-        if (res.data?.success) {
-          const svcs = res.data.data.profile?.services || []
-          const mapped = svcs.map((s) => ({
-            id: s._id,
-            title: s.title,
-            description: s.description,
-            price: Array.isArray(s.packages) && s.packages[0]?.price ? s.packages[0].price : 0,
-            rating: s.rating || 0,
-            reviews: s.totalReviews || 0,
-            deliveryTime: s.packages && s.packages[0]?.duration ? s.packages[0].duration : '',
-            category: s.category || '',
-            status: s.status || 'Active'
-          }))
-          setServices(mapped)
-        }
-      } catch {}
+  const [isLoading, setIsLoading] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+
+  const loadServices = async () => {
+    try {
+      // Fetch services from the dedicated services API for the mentor
+      const res = await servicesAPI.getAll()
+      if (res.data?.success) {
+        // Map backend service objects to frontend state structure
+        const mapped = res.data.data.map((s) => ({
+          id: s._id,
+          title: s.title,
+          description: s.description,
+          overview: s.description, // Mapping description to overview as well if needed or verify schema
+          features: s.packages?.[0]?.features || [], // Simplified mapping, adjust as needed
+          packages: {
+            basic: s.packages?.find(p => p.name === 'basic') || { price: "", features: [], duration: "", calls: "" },
+            standard: s.packages?.find(p => p.name === 'standard') || { price: "", features: [], duration: "", calls: "" },
+            premium: s.packages?.find(p => p.name === 'premium') || { price: "", features: [], duration: "", calls: "" }
+          },
+          price: s.packages?.[0]?.price || 0,
+          rating: s.rating || 0,
+          reviews: s.totalReviews || 0,
+          deliveryTime: s.packages?.[0]?.duration || '',
+          category: s.category || '',
+          status: s.status || 'draft',
+          images: s.images || [],
+          mentorBio: "" // If this field exists in your Service model, map it. Otherwise keep empty.
+        }))
+        setServices(mapped)
+      }
+    } catch (error) {
+      console.error("Failed to load services:", error)
     }
-    load()
+  }
+
+  useEffect(() => {
+    loadServices()
   }, [])
 
   const [showAddModal, setShowAddModal] = useState(false)
@@ -53,9 +69,17 @@ const ServicesTab = () => {
   const [newFeature, setNewFeature] = useState("")
   const [editingPackage, setEditingPackage] = useState(null)
 
-  const deleteService = (id) => {
+  const deleteService = async (id) => {
     if (window.confirm("Are you sure you want to delete this service?")) {
-      setServices(services.filter((service) => service.id !== id))
+      try {
+        const res = await servicesAPI.delete(id)
+        if (res.data?.success) {
+          setServices(services.filter((service) => service.id !== id))
+        }
+      } catch (error) {
+        console.error("Failed to delete service:", error)
+        alert("Failed to delete service")
+      }
     }
   }
 
@@ -104,26 +128,34 @@ const ServicesTab = () => {
     })
   }
 
-  const handleAddService = () => {
+  const handleAddService = async () => {
     if (newService.title && newService.description && newService.overview) {
-      const service = {
-        id: Date.now(),
-        title: newService.title,
-        description: newService.description,
-        overview: newService.overview,
-        features: newService.features,
-        packages: newService.packages,
-        deliveryTime: newService.deliveryTime,
-        category: newService.category,
-        mentorBio: newService.mentorBio,
-        images: newService.images,
-        rating: newService.rating,
-        reviews: newService.reviews,
-        status: "Active"
+      setIsLoading(true)
+      try {
+        const serviceData = {
+          title: newService.title,
+          description: newService.description, // Using description as the main text
+          category: newService.category,
+          images: newService.images,
+          packages: [
+            { name: 'basic', ...newService.packages.basic },
+            { name: 'standard', ...newService.packages.standard },
+            { name: 'premium', ...newService.packages.premium }
+          ].filter(p => p.price && p.duration) // Only include packages with data
+        }
+
+        const res = await servicesAPI.create(serviceData)
+        if (res.data?.success) {
+          await loadServices() // Reload to get the fresh ID and data
+          resetForm()
+          setShowAddModal(false)
+        }
+      } catch (error) {
+        console.error("Failed to create service:", error)
+        alert("Failed to create service. Please check all fields.")
+      } finally {
+        setIsLoading(false)
       }
-      setServices([...services, service])
-      resetForm()
-      setShowAddModal(false)
     } else {
       alert("Please fill in all required fields (Title, Description, Overview)")
     }
@@ -172,31 +204,84 @@ const ServicesTab = () => {
     setShowAddModal(true)
   }
 
-  const handleUpdateService = () => {
+  const handleUpdateService = async () => {
     if (newService.title && newService.description && newService.overview) {
-      setServices(services.map(service => 
-        service.id === editingService.id 
-          ? { 
-              ...service, 
-              title: newService.title,
-              description: newService.description,
-              overview: newService.overview,
-              features: newService.features,
-              packages: newService.packages,
-              deliveryTime: newService.deliveryTime,
-              category: newService.category,
-              mentorBio: newService.mentorBio,
-              images: newService.images,
-              rating: newService.rating,
-              reviews: newService.reviews
-            }
-          : service
-      ))
-      setEditingService(null)
-      resetForm()
-      setShowAddModal(false)
+      setIsLoading(true)
+      try {
+        const serviceData = {
+          title: newService.title,
+          description: newService.description,
+          category: newService.category,
+          images: newService.images,
+          packages: [
+            { name: 'basic', ...newService.packages.basic },
+            { name: 'standard', ...newService.packages.standard },
+            { name: 'premium', ...newService.packages.premium }
+          ].filter(p => p.price && p.duration)
+        }
+
+        console.log("📤 Updating service with data:", serviceData)
+        console.log("🖼️ Images being sent:", serviceData.images)
+
+        const res = await servicesAPI.update(editingService.id, serviceData)
+        if (res.data?.success) {
+          await loadServices()
+          setEditingService(null)
+          resetForm()
+          setShowAddModal(false)
+        }
+      } catch (error) {
+        console.error("Failed to update service:", error)
+        alert("Failed to update service")
+      } finally {
+        setIsLoading(false)
+      }
     } else {
       alert("Please fill in all required fields (Title, Description, Overview)")
+    }
+  }
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+
+    // Limit to 5 images total
+    if ((newService.images?.length || 0) + files.length > 5) {
+      alert("You can only upload up to 5 images per service.")
+      return
+    }
+
+    setIsUploading(true)
+    const formData = new FormData()
+    files.forEach(file => {
+      formData.append('images', file)
+    })
+
+    try {
+      console.log("📤 Starting image upload...", files.length, "files")
+
+      // Log FormData content for debugging
+      for (let [key, value] of formData.entries()) {
+        console.log(`📦 FormData item: ${key}`, value.name || value)
+      }
+
+      const res = await servicesAPI.uploadImages(formData)
+      console.log("✅ Upload response raw:", res)
+      console.log("✅ Upload response:", res.data)
+      if (res.data?.success) {
+        const newUrls = res.data.fileUrls
+        setNewService(prev => ({
+          ...prev,
+          images: [...(prev.images || []), ...newUrls]
+        }))
+      }
+    } catch (error) {
+      console.error("❌ Image upload failed:", error)
+      console.error("Error response:", error.response?.data)
+      console.error("Error status:", error.response?.status)
+      alert(`Failed to upload images: ${error.response?.data?.message || error.message}`)
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -237,15 +322,24 @@ const ServicesTab = () => {
                     {service.category}
                   </span>
                   <span
-                    className={`px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
-                      service.status === "Active" ? "bg-green-500/20 text-green-500" : "bg-gray-500/20 text-gray-500"
-                    }`}
+                    className={`px-2 sm:px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${service.status === "Active" ? "bg-green-500/20 text-green-500" : "bg-gray-500/20 text-gray-500"
+                      }`}
                   >
                     {service.status}
                   </span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 break-words">{service.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed break-words">{service.description}</p>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2 break-words mt-3">{service.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed break-words line-clamp-3">{service.description}</p>
+              </div>
+              {/* Service Image Thumbnail */}
+              <div className="w-48 aspect-video rounded-lg overflow-hidden border border-[#2a2a2a] flex-shrink-0 bg-[#242424]">
+                {service.images && service.images.length > 0 ? (
+                  <img src={service.images[0]} alt={service.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-600">
+                    <ImageIcon className="w-8 h-8" />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -270,7 +364,7 @@ const ServicesTab = () => {
                 </div>
               </div>
               <div className="flex gap-2 justify-end sm:justify-start">
-                <button 
+                <button
                   onClick={() => handleEditService(service)}
                   className="p-2 bg-[#242424] text-white rounded-lg hover:bg-[#2a2a2a] transition-colors border border-[#3a3a3a]"
                 >
@@ -311,7 +405,7 @@ const ServicesTab = () => {
                   <input
                     type="text"
                     value={newService.title}
-                    onChange={(e) => setNewService({...newService, title: e.target.value})}
+                    onChange={(e) => setNewService({ ...newService, title: e.target.value })}
                     className="w-full bg-[#242424] text-white rounded-lg p-3 border border-[#3a3a3a] focus:border-[#5D38DE] focus:outline-none text-sm sm:text-base"
                     placeholder="e.g., SOP Writing & Review"
                   />
@@ -320,7 +414,7 @@ const ServicesTab = () => {
                   <label className="block text-sm font-medium text-gray-400 mb-2">Short Description *</label>
                   <textarea
                     value={newService.description}
-                    onChange={(e) => setNewService({...newService, description: e.target.value})}
+                    onChange={(e) => setNewService({ ...newService, description: e.target.value })}
                     className="w-full bg-[#242424] text-white rounded-lg p-3 border border-[#3a3a3a] focus:border-[#5D38DE] focus:outline-none min-h-[80px] resize-none text-sm sm:text-base"
                     placeholder="Brief description of your service..."
                   />
@@ -329,7 +423,7 @@ const ServicesTab = () => {
                   <label className="block text-sm font-medium text-gray-400 mb-2">Detailed Overview *</label>
                   <textarea
                     value={newService.overview}
-                    onChange={(e) => setNewService({...newService, overview: e.target.value})}
+                    onChange={(e) => setNewService({ ...newService, overview: e.target.value })}
                     className="w-full bg-[#242424] text-white rounded-lg p-3 border border-[#3a3a3a] focus:border-[#5D38DE] focus:outline-none min-h-[120px] resize-none text-sm sm:text-base"
                     placeholder="Detailed overview of what you offer..."
                   />
@@ -337,9 +431,9 @@ const ServicesTab = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
-                    <select 
+                    <select
                       value={newService.category}
-                      onChange={(e) => setNewService({...newService, category: e.target.value})}
+                      onChange={(e) => setNewService({ ...newService, category: e.target.value })}
                       className="w-full bg-[#242424] text-white rounded-lg p-3 border border-[#3a3a3a] focus:border-[#5D38DE] focus:outline-none text-sm sm:text-base"
                     >
                       <option value="Writing">Writing</option>
@@ -356,7 +450,7 @@ const ServicesTab = () => {
                     <input
                       type="text"
                       value={newService.deliveryTime}
-                      onChange={(e) => setNewService({...newService, deliveryTime: e.target.value})}
+                      onChange={(e) => setNewService({ ...newService, deliveryTime: e.target.value })}
                       className="w-full bg-[#242424] text-white rounded-lg p-3 border border-[#3a3a3a] focus:border-[#5D38DE] focus:outline-none text-sm sm:text-base"
                       placeholder="3-5 days"
                     />
@@ -501,7 +595,7 @@ const ServicesTab = () => {
                 <h4 className="text-lg font-semibold text-white border-b border-[#3a3a3a] pb-2">Mentor Bio for Service</h4>
                 <textarea
                   value={newService.mentorBio}
-                  onChange={(e) => setNewService({...newService, mentorBio: e.target.value})}
+                  onChange={(e) => setNewService({ ...newService, mentorBio: e.target.value })}
                   className="w-full bg-[#242424] text-white rounded-lg p-3 border border-[#3a3a3a] focus:border-[#5D38DE] focus:outline-none min-h-[100px] resize-none"
                   placeholder="Brief bio about yourself for this specific service..."
                 />
@@ -516,19 +610,14 @@ const ServicesTab = () => {
                     <input
                       type="file"
                       accept="image/*"
+                      multiple
                       className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (!file) return
-                        const reader = new FileReader()
-                        reader.onload = () => {
-                          setNewService(prev => ({ ...prev, images: [...(prev.images || []), reader.result] }))
-                        }
-                        reader.readAsDataURL(file)
-                      }}
+                      onChange={handleImageUpload}
+                      disabled={isUploading}
                     />
                   </label>
-                  <span className="text-xs text-gray-400">PNG, JPG up to ~2MB</span>
+                  <span className="text-xs text-gray-400">PNG, JPG up to 5MB (Max 5)</span>
+                  {isUploading && <Loader2 className="w-4 h-4 animate-spin text-[#5D38DE]" />}
                 </div>
                 {newService.images && newService.images.length > 0 && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -548,11 +637,22 @@ const ServicesTab = () => {
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button 
+              <button
                 onClick={editingService ? handleUpdateService : handleAddService}
-                className="flex-1 px-6 py-3 bg-[#5D38DE] text-white rounded-lg hover:bg-[#4d2ec4] transition-colors"
+                disabled={isLoading || isUploading}
+                className={`flex-1 px-6 py-3 bg-[#5D38DE] text-white rounded-lg hover:bg-[#4d2ec4] transition-colors ${(isLoading || isUploading) ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
               >
-                {editingService ? "Update Service" : "Add Service"}
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                ) : isUploading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Uploading Images...</span>
+                  </div>
+                ) : (
+                  editingService ? "Update Service" : "Add Service"
+                )}
               </button>
               <button
                 onClick={handleCancelModal}

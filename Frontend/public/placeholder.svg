@@ -1,0 +1,10 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="url(#gradient)"/>
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5D38DE"/>
+      <stop offset="100%" stop-color="#7D47EF"/>
+    </linearGradient>
+  </defs>
+  <text x="200" y="150" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="16" opacity="0.8">Service Image</text>
+</svg>

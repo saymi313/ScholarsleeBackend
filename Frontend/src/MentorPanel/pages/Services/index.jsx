@@ -38,7 +38,7 @@ const Services = () => {
       console.log('🔧 Loading mentor services...')
       const response = await servicesAPI.getAll(filters)
       console.log('🔧 Services response:', response.data)
-      
+
       if (response.data.success) {
         setServices(response.data.data.services || [])
         setPagination(response.data.data.pagination || { current: 1, pages: 1, total: 0 })
@@ -144,7 +144,7 @@ const Services = () => {
         <main className="flex-1 overflow-y-auto p-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-              <div>
+            <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">My Services</h1>
               <p className="text-gray-400">Manage your mentorship services and packages</p>
             </div>
@@ -192,7 +192,7 @@ const Services = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((service) => (
+              {services.map((service) => (
                 <div
                   key={service._id}
                   className="group relative bg-[#1a1a1a] rounded-xl border border-[#2a2a2a] overflow-hidden hover:border-[#5D38DE] transition-all duration-300"
@@ -201,11 +201,11 @@ const Services = () => {
                   <div className="absolute top-4 right-4 z-10">
                     <span className={`px-3 py-1 text-xs font-medium text-white rounded-full ${getStatusColor(service.status)}`}>
                       {getStatusText(service.status)}
-                        </span>
+                    </span>
                   </div>
 
                   {/* Service Image */}
-                  <div className="relative aspect-[4/3] bg-[#5D38DE]">
+                  <div className="relative aspect-[16/9] bg-[#5D38DE]">
                     {service.images && service.images.length > 0 ? (
                       <img
                         src={service.images[0]}
@@ -231,7 +231,7 @@ const Services = () => {
                         {service.title}
                       </h3>
                     </div>
-                    
+
                     <p className="text-gray-400 text-sm line-clamp-3 mb-4">
                       {service.description}
                     </p>
@@ -243,15 +243,15 @@ const Services = () => {
                         <span className="text-sm text-gray-300">
                           {service.rating.toFixed(1)} ({service.totalReviews} reviews)
                         </span>
+                      </div>
                     </div>
-                  </div>
 
                     {/* Price Range */}
                     <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4 text-[#5D38DE]" />
-                      <div>
-                        <div className="text-xs text-gray-400">Starting at</div>
+                        <div>
+                          <div className="text-xs text-gray-400">Starting at</div>
                           <div className="text-lg font-bold text-white">{formatPrice(service.packages)}</div>
                         </div>
                       </div>
@@ -259,7 +259,7 @@ const Services = () => {
 
                     {/* Action Buttons */}
                     <div className="flex gap-2">
-                      <button 
+                      <button
                         onClick={() => handleEditService(service)}
                         className="flex-1 flex items-center justify-center gap-2 bg-[#5D38DE] hover:bg-[#4a2bb8] text-white px-3 py-2 rounded-lg text-sm transition-colors"
                       >
@@ -274,33 +274,33 @@ const Services = () => {
                       </button>
                     </div>
                   </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Pagination */}
           {pagination.pages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-8">
-                    <button 
+              <button
                 onClick={() => setFilters(prev => ({ ...prev, page: prev.page - 1 }))}
                 disabled={pagination.current === 1}
                 className="px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#3a3a3a] transition-colors"
-                    >
+              >
                 Previous
-                    </button>
+              </button>
               <span className="px-4 py-2 text-gray-400">
                 Page {pagination.current} of {pagination.pages}
               </span>
-                    <button
+              <button
                 onClick={() => setFilters(prev => ({ ...prev, page: prev.page + 1 }))}
                 disabled={pagination.current === pagination.pages}
                 className="px-4 py-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#3a3a3a] transition-colors"
-                    >
+              >
                 Next
-                    </button>
-              </div>
-            )}
+              </button>
+            </div>
+          )}
         </main>
       </div>
 

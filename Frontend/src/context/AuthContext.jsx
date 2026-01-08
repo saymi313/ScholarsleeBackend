@@ -58,9 +58,9 @@ const isPublicPath = (pathname) => {
 // Create axios instance with base configuration
 const api = axios.create({
   // baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : "https://api.scholarslee.com/api",
-  baseURL: "https://api.scholarslee.com/api", // Production
-  // baseURL: "http://localhost:5000/api", // Local development
-  timeout: 30000, // Increased from 10s to 30s to allow email service to complete
+  // baseURL: "https://api.scholarslee.com/api", // Production
+  baseURL: "http://localhost:5000/api", // Local development
+  timeout: 60000, // Increased to 60s for production reliability (matches main api.js)
   headers: {
     "Content-Type": "application/json",
   },

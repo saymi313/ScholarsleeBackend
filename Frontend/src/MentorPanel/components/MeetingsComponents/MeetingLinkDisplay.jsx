@@ -93,7 +93,7 @@ const MeetingLinkDisplay = ({ isVisible, meetingDetails, meetingLink, onClose, o
                 <span className="text-white ml-2 font-medium">{meetingDetails.menteeName}</span>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <MessageSquare className="w-4 h-4 text-gray-400" />
               <div>
@@ -101,7 +101,7 @@ const MeetingLinkDisplay = ({ isVisible, meetingDetails, meetingLink, onClose, o
                 <span className="text-white ml-2 font-medium">{meetingDetails.topic}</span>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <Calendar className="w-4 h-4 text-gray-400" />
               <div>
@@ -109,7 +109,7 @@ const MeetingLinkDisplay = ({ isVisible, meetingDetails, meetingLink, onClose, o
                 <span className="text-white ml-2 font-medium">{formatDate(meetingDetails.date)}</span>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <Clock className="w-4 h-4 text-gray-400" />
               <div>
@@ -127,11 +127,11 @@ const MeetingLinkDisplay = ({ isVisible, meetingDetails, meetingLink, onClose, o
               <Link className="w-5 h-5 text-[#5D38DE]" />
               Meeting Link
             </h3>
-            <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs font-semibold rounded-full">
-              Demo
+            <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-semibold rounded-full">
+              Verified
             </span>
           </div>
-          
+
           <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#3a3a3a] mb-4">
             <p className="text-white text-sm break-all">{meetingLink}</p>
           </div>
@@ -168,11 +168,9 @@ const MeetingLinkDisplay = ({ isVisible, meetingDetails, meetingLink, onClose, o
           <div className="flex items-start gap-3">
             <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="text-green-400 font-semibold mb-1">Demo Meeting Link Generated!</h4>
+              <h4 className="text-green-400 font-semibold mb-1"> Meeting Link Generated!</h4>
               <p className="text-gray-300 text-sm">
-                A demo meeting link has been generated for your session. 
-                This is a demonstration link for testing purposes. 
-                No real Google Meet session is created in this demo version.
+                Meeting has been scheduled successfully!
               </p>
             </div>
           </div>

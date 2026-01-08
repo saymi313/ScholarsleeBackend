@@ -26,9 +26,9 @@ import { profileAPI } from "../../../utils/api"
 export default function ProfilePage() {
   const navigate = useNavigate()
   const { isAuthenticated, user, loading: authLoading } = useAuth()
-  
+
   const [profile, setProfile] = useState({
-    avatar: "/u.jpeg",
+    avatar: "",
     fullName: "",
     headline: "",
     location: "",
@@ -94,10 +94,10 @@ export default function ProfilePage() {
       if (profileLoaded) {
         return
       }
-      
+
       setLoading(true)
       setError('')
-      
+
       // Check if user is authenticated
       if (!isAuthenticated || !user) {
         setError('Please login to access your profile')
@@ -108,18 +108,18 @@ export default function ProfilePage() {
         }, 2000)
         return
       }
-      
+
       // Load complete profile data from single API endpoint
       console.log('📖 Getting mentee profile data...')
       const profileResponse = await profileAPI.mentee.get()
       console.log('📖 Get response:', profileResponse.data)
-      
+
       if (profileResponse.data.success) {
         const menteeData = profileResponse.data.data.profile
-        
+
         // Get user data from AuthContext (already available)
         const userData = user
-        
+
         setProfile(prev => ({
           ...prev,
           // User profile fields from AuthContext
@@ -127,7 +127,7 @@ export default function ProfilePage() {
           email: userData.email || '',
           phone: userData.profile?.phone || '',
           location: userData.profile?.country || '',
-          avatar: userData.profile?.avatar || '/u.jpeg',
+          avatar: userData.profile?.avatar || '',
           preferences: {
             ...prev.preferences,
             timezone: userData.profile?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -187,9 +187,9 @@ export default function ProfilePage() {
       'previousExperience',
       'challenges'
     ]
-    
+
     const missing = []
-    
+
     fields.forEach(field => {
       if (profileData[field] && (Array.isArray(profileData[field]) ? profileData[field].length > 0 : profileData[field].trim())) {
         completeness += (100 / fields.length)
@@ -197,7 +197,7 @@ export default function ProfilePage() {
         missing.push(field)
       }
     })
-    
+
     return {
       completeness: Math.round(completeness),
       missingFields: missing
@@ -211,17 +211,27 @@ export default function ProfilePage() {
     setMissingFields(missingFields)
   }, [profile, calculateCompleteness])
 
+  // Auto-clear success message
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('')
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [successMessage])
+
   const handleSave = async () => {
     if (!isValid) return
     setSaving(true)
     setError('')
-    
+
     try {
       // Extract name parts
       const nameParts = profile.fullName.trim().split(' ')
       const firstName = nameParts[0] || ''
       const lastName = nameParts.slice(1).join(' ') || ''
-      
+
       // Update user profile
       const userData = {
         firstName,
@@ -230,11 +240,11 @@ export default function ProfilePage() {
         country: profile.location,
         timezone: profile.preferences.timezone
       }
-      
+
       console.log('👤 Updating user profile:', userData)
       const userResponse = await profileAPI.user.update(userData)
       console.log('👤 User update response:', userResponse.data)
-      
+
       if (!userResponse.data.success) {
         throw new Error(userResponse.data.message || 'Failed to update user profile')
       }
@@ -257,11 +267,11 @@ export default function ProfilePage() {
           linkedin: profile.linkedin
         }
       }
-      
+
       console.log('🎓 Updating mentee profile:', menteeData)
       const menteeResponse = await profileAPI.mentee.update(menteeData)
       console.log('🎓 Mentee update response:', menteeResponse.data)
-      
+
       if (!menteeResponse.data.success) {
         // If mentee profile doesn't exist, create it first
         if (menteeResponse.data.message && (menteeResponse.data.message.includes('not found') || menteeResponse.data.message.includes('404'))) {
@@ -286,7 +296,7 @@ export default function ProfilePage() {
             }
           })
           console.log('🆕 Create response:', createResponse.data)
-          
+
           if (!createResponse.data.success) {
             // If profile already exists, try to update it instead
             if (createResponse.data.message && createResponse.data.message.includes('already exists')) {
@@ -306,7 +316,7 @@ export default function ProfilePage() {
       }
 
       setDirty(false)
-      setSuccessMessage("Profile saved successfully! 🎉")
+      setSuccessMessage("Profile saved successfully")
     } catch (error) {
       setError(error.message || 'Failed to save profile')
     } finally {
@@ -365,7 +375,11 @@ export default function ProfilePage() {
           {/* Left/Main column */}
           <div className="lg:col-span-2 min-w-0 space-y-4 md:space-y-6">
             <SectionCard title="Profile Photo" description="Upload a clear, friendly photo.">
-              <AvatarUploader value={profile.avatar} onChange={(avatar) => update({ avatar })} />
+              <AvatarUploader
+                value={profile.avatar}
+                onChange={(avatar) => update({ avatar })}
+                name={profile.fullName}
+              />
             </SectionCard>
 
             <SectionCard title="Basic Information" description="Tell others who you are." required>
@@ -378,9 +392,9 @@ export default function ProfilePage() {
 
 
             <SectionCard title="Education Level" description="Your current education status." required>
-              <EducationLevelForm 
-                value={{ educationLevel: profile.educationLevel, currentInstitution: profile.currentInstitution }} 
-                onChange={(data) => update(data)} 
+              <EducationLevelForm
+                value={{ educationLevel: profile.educationLevel, currentInstitution: profile.currentInstitution }}
+                onChange={(data) => update(data)}
               />
             </SectionCard>
 
@@ -393,9 +407,9 @@ export default function ProfilePage() {
             </SectionCard>
 
             <SectionCard title="Budget & Currency" description="Your financial capacity for mentoring.">
-              <BudgetForm 
-                value={{ budget: profile.budget, budgetCurrency: profile.budgetCurrency }} 
-                onChange={(data) => update(data)} 
+              <BudgetForm
+                value={{ budget: profile.budget, budgetCurrency: profile.budgetCurrency }}
+                onChange={(data) => update(data)}
               />
             </SectionCard>
 
@@ -408,16 +422,16 @@ export default function ProfilePage() {
             </SectionCard>
 
             <SectionCard title="Study Timeline" description="When do you want to start?" required>
-              <TimelineForm 
-                value={{ timeline: profile.timeline }} 
-                onChange={(data) => update(data)} 
+              <TimelineForm
+                value={{ timeline: profile.timeline }}
+                onChange={(data) => update(data)}
               />
             </SectionCard>
 
             <SectionCard title="Previous Experience" description="Your background and experience.">
-              <PreviousExperienceForm 
-                value={{ previousExperience: profile.previousExperience }} 
-                onChange={(data) => update(data)} 
+              <PreviousExperienceForm
+                value={{ previousExperience: profile.previousExperience }}
+                onChange={(data) => update(data)}
               />
             </SectionCard>
 
@@ -439,7 +453,7 @@ export default function ProfilePage() {
                   <span className="text-sm font-semibold text-[#5D38DE]">{profileCompleteness}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-[#5D38DE] h-2 rounded-full transition-all duration-300"
                     style={{ width: `${profileCompleteness}%` }}
                   ></div>
@@ -485,123 +499,14 @@ export default function ProfilePage() {
         </div>
       </main>
 
-      <SaveBar dirty={dirty} saving={saving} valid={isValid} onSave={handleSave} onCancel={handleCancel} />
-
-      {/* Success Popup */}
-      {/* Success Popup */}
-      {successMessage && createPortal(
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-md p-4" style={{ zIndex: 9999 }}>
-          <div className="w-full max-w-lg transform transition-all duration-500 ease-out scale-100 opacity-100">
-            <div className="relative overflow-hidden rounded-3xl border border-gray-200/50 bg-white/95 shadow-2xl ring-1 ring-gray-200/50 backdrop-blur-xl">
-              {/* Animated background gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-white to-green-50 opacity-80" />
-              
-              {/* Floating particles effect */}
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-4 -right-4 h-8 w-8 rounded-full bg-emerald-400/20 animate-pulse" />
-                <div className="absolute top-1/4 -left-2 h-4 w-4 rounded-full bg-green-400/30 animate-bounce" style={{ animationDelay: '0.5s' }} />
-                <div className="absolute bottom-1/4 -right-2 h-6 w-6 rounded-full bg-emerald-300/25 animate-pulse" style={{ animationDelay: '1s' }} />
-              </div>
-              
-              <div className="relative p-8">
-                {/* Success Icon with animation */}
-                <div className="flex justify-center mb-6">
-                  <div className="relative">
-                    <div className="h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shadow-lg shadow-emerald-500/25 animate-bounce">
-                      <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M9 12l2 2 4-4"></path>
-                        <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"></path>
-                      </svg>
-                    </div>
-                    {/* Ripple effect */}
-                    <div className="absolute inset-0 rounded-full bg-emerald-400/30 animate-ping" />
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="text-center space-y-4">
-                  <h3 className="text-2xl font-bold text-gray-900">Excellent Work!</h3>
-                  <p className="text-lg text-gray-600 leading-relaxed">
-                    {successMessage}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Your profile has been updated and saved successfully.
-                  </p>
-                </div>
-
-                {/* Action Button */}
-                <div className="mt-8 flex justify-center">
-                  <button
-                    className="group relative inline-flex items-center justify-center rounded-2xl px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-emerald-500/20"
-                    onClick={() => setSuccessMessage('')}
-                  >
-                    <span className="relative z-10">Continue</span>
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-emerald-600 to-green-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Error Popup */}
-      {error && createPortal(
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-md p-4" style={{ zIndex: 9999 }}>
-          <div className="w-full max-w-lg transform transition-all duration-500 ease-out scale-100 opacity-100">
-            <div className="relative overflow-hidden rounded-3xl border border-gray-200/50 bg-white/95 shadow-2xl ring-1 ring-gray-200/50 backdrop-blur-xl">
-              {/* Animated background gradient */}
-              <div className="absolute inset-0 bg-gradient-to-br from-red-50 via-white to-rose-50 opacity-80" />
-              
-              {/* Floating particles effect */}
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-4 -right-4 h-8 w-8 rounded-full bg-red-400/20 animate-pulse" />
-                <div className="absolute top-1/4 -left-2 h-4 w-4 rounded-full bg-rose-400/30 animate-bounce" style={{ animationDelay: '0.5s' }} />
-                <div className="absolute bottom-1/4 -right-2 h-6 w-6 rounded-full bg-red-300/25 animate-pulse" style={{ animationDelay: '1s' }} />
-              </div>
-              
-              <div className="relative p-8">
-                {/* Error Icon with animation */}
-                <div className="flex justify-center mb-6">
-                  <div className="relative">
-                    <div className="h-20 w-20 rounded-full bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center shadow-lg shadow-red-500/25 animate-bounce">
-                      <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                      </svg>
-                    </div>
-                    {/* Ripple effect */}
-                    <div className="absolute inset-0 rounded-full bg-red-400/30 animate-ping" />
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="text-center space-y-4">
-                  <h3 className="text-2xl font-bold text-gray-900">Oops! Something went wrong</h3>
-                  <p className="text-lg text-gray-600 leading-relaxed">
-                    {error}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Please try again or contact support if the problem persists.
-                  </p>
-                </div>
-
-                {/* Action Button */}
-                <div className="mt-8 flex justify-center">
-                  <button
-                    className="group relative inline-flex items-center justify-center rounded-2xl px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-500/20"
-                    onClick={() => setError('')}
-                  >
-                    <span className="relative z-10">Try Again</span>
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-red-600 to-rose-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <SaveBar
+        dirty={dirty}
+        saving={saving}
+        valid={isValid}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        successMessage={successMessage}
+      />
     </div>
   )
 }

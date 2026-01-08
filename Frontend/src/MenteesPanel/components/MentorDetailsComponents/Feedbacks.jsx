@@ -30,12 +30,12 @@ export default function Feedbacks({ mentorData }) {
   }, [mentorId]);
 
   // Filter feedbacks by service on frontend (since backend doesn't support service filter yet)
-  const filteredFeedbacks = filterService === 'all' 
-    ? feedbacks 
+  const filteredFeedbacks = filterService === 'all'
+    ? feedbacks
     : feedbacks.filter(f => {
-        const serviceId = f.serviceId?._id || f.serviceId;
-        return serviceId === filterService;
-      });
+      const serviceId = f.serviceId?._id || f.serviceId;
+      return serviceId === filterService;
+    });
 
   const loadFeedbacks = async (page = 1) => {
     try {
@@ -52,11 +52,11 @@ export default function Feedbacks({ mentorData }) {
         setFeedbacks(feedbacksData);
         setPagination(response.data.data?.pagination || pagination);
       } else {
-        setError(response.data?.message || 'Failed to load feedbacks');
+        setError(response.data?.message || 'Please login or register to view feedbacks');
       }
     } catch (error) {
       console.error('Error loading feedbacks:', error);
-      setError('Failed to load feedbacks. Please try again.');
+      setError('Please login or register your account to view feedbacks.');
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ export default function Feedbacks({ mentorData }) {
         feedbacksData.forEach(feedback => {
           const serviceId = feedback.serviceId?._id || feedback.serviceId;
           const serviceTitle = feedback.serviceId?.title || 'Unknown Service';
-          
+
           if (serviceId && !serviceIds.has(serviceId)) {
             serviceIds.add(serviceId);
             uniqueServices.push({
@@ -129,7 +129,7 @@ export default function Feedbacks({ mentorData }) {
   const getMenteeName = (menteeId) => {
     if (!menteeId) return 'Anonymous';
     if (typeof menteeId === 'string') return 'Anonymous';
-    
+
     const firstName = menteeId.profile?.firstName || '';
     const lastName = menteeId.profile?.lastName || '';
     return `${firstName} ${lastName}`.trim() || 'Anonymous';
@@ -271,11 +271,10 @@ export default function Feedbacks({ mentorData }) {
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <Star
                                   key={star}
-                                  className={`w-4 h-4 ${
-                                    star <= feedback.rating
+                                  className={`w-4 h-4 ${star <= feedback.rating
                                       ? 'text-yellow-400 fill-current'
                                       : 'text-gray-300'
-                                  }`}
+                                    }`}
                                 />
                               ))}
                               <span className="ml-1 text-sm font-medium text-gray-700">

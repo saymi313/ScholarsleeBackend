@@ -11,10 +11,10 @@ const MentorPage = () => {
       <Helmet>
         <title>Find Your Perfect Mentor | Scholarslee</title>
         <meta name="description" content="Browse verified mentors specializing in university applications, visa guidance, career planning, and scholarship assistance. Connect with experts who've been through your journey." />
-        <link rel="canonical" href="https://scholarslee.com/mentees/mentor" />
+        <link rel="canonical" href="https://scholarslee.com/mentees/mentors" />
         <meta property="og:title" content="Find Your Perfect Mentor | Scholarslee" />
         <meta property="og:description" content="Browse verified mentors specializing in university applications, visa guidance, and career planning." />
-        <meta property="og:url" content="https://scholarslee.com/mentees/mentor" />
+        <meta property="og:url" content="https://scholarslee.com/mentees/mentors" />
       </Helmet>
 
       <div className="min-h-screen bg-gray-50 relative overflow-hidden">

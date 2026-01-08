@@ -11,8 +11,8 @@ const BookingsAndMeetingsPage = () => {
   const urlParams = new URLSearchParams(location.search);
   const tabFromUrl = urlParams.get('tab');
   const [activeTab, setActiveTab] = useState(
-    tabFromUrl === 'meetings' ? 'meetings' : 
-    location.pathname.includes('/meetings') ? 'meetings' : 'bookings'
+    tabFromUrl === 'meetings' ? 'meetings' :
+      location.pathname.includes('/meetings') ? 'meetings' : 'bookings'
   );
   const [bookings, setBookings] = useState([]);
   const [meetings, setMeetings] = useState([]);
@@ -41,10 +41,10 @@ const BookingsAndMeetingsPage = () => {
     try {
       setLoading(true);
       setError('');
-      
+
       const params = { status: bookingFilter === 'all' ? '' : bookingFilter };
       const response = await bookingAPI.getMenteeBookings(params);
-      
+
       if (response.data && response.data.success) {
         setBookings(response.data.data.bookings || []);
       } else {
@@ -52,7 +52,13 @@ const BookingsAndMeetingsPage = () => {
       }
     } catch (error) {
       console.error('Error loading bookings:', error);
-      setError('Failed to load bookings');
+
+      // Check if it's an authentication error
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        setError('Please login to view your bookings');
+      } else {
+        setError('Failed to load bookings. Please login first or register your account.');
+      }
     } finally {
       setLoading(false);
     }
@@ -62,12 +68,17 @@ const BookingsAndMeetingsPage = () => {
     try {
       const params = { status: meetingFilter === 'all' ? '' : meetingFilter };
       const response = await meetingAPI.getMenteeMeetings(params);
-      
+
       if (response.data && response.data.success) {
         setMeetings(response.data.data.meetings || []);
       }
     } catch (error) {
       console.error('Error loading meetings:', error);
+
+      // Check if it's an authentication error
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        setError('Please login to view your meetings');
+      }
     }
   };
 
@@ -80,9 +91,9 @@ const BookingsAndMeetingsPage = () => {
       });
 
       if (response.data && response.data.success) {
-        setBookings(prev => 
-          prev.map(booking => 
-            booking._id === bookingId 
+        setBookings(prev =>
+          prev.map(booking =>
+            booking._id === bookingId
               ? { ...booking, status: 'cancelled' }
               : booking
           )
@@ -183,7 +194,7 @@ const BookingsAndMeetingsPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
@@ -199,22 +210,20 @@ const BookingsAndMeetingsPage = () => {
             <nav className="-mb-px flex space-x-8 min-w-max">
               <button
                 onClick={() => setActiveTab('bookings')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'bookings'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'bookings'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 <Calendar className="w-4 h-4 inline mr-2" />
                 Bookings ({bookings.length})
               </button>
               <button
                 onClick={() => setActiveTab('meetings')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'meetings'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'meetings'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 <Video className="w-4 h-4 inline mr-2" />
                 Meetings ({meetings.length})
@@ -225,17 +234,32 @@ const BookingsAndMeetingsPage = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-            {error}
-            <button
-              onClick={() => {
-                if (activeTab === 'bookings') loadBookings();
-                else loadMeetings();
-              }}
-              className="ml-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Try Again
-            </button>
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-start">
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3" />
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-red-800">Authentication Required</h3>
+                <p className="mt-1 text-sm text-red-700">{error}</p>
+                <div className="mt-4 flex gap-3">
+                  <a
+                    href="/login"
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                  >
+                    Login Now
+                  </a>
+                  <button
+                    onClick={() => {
+                      setError('');
+                      if (activeTab === 'bookings') loadBookings();
+                      else loadMeetings();
+                    }}
+                    className="px-4 py-2 bg-white text-red-700 border border-red-300 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -248,11 +272,10 @@ const BookingsAndMeetingsPage = () => {
                 <button
                   key={filterType}
                   onClick={() => setBookingFilter(filterType)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    bookingFilter === filterType
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${bookingFilter === filterType
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
                 >
                   {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
                 </button>
@@ -266,7 +289,7 @@ const BookingsAndMeetingsPage = () => {
                   <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No Bookings Found</h3>
                   <p className="text-gray-500">
-                    {bookingFilter === 'all' 
+                    {bookingFilter === 'all'
                       ? 'You haven\'t made any bookings yet.'
                       : `No ${bookingFilter} bookings found.`
                     }
@@ -332,13 +355,13 @@ const BookingsAndMeetingsPage = () => {
 
                         <div className="flex items-center gap-2 mt-2 sm:mt-0 sm:ml-4 w-full sm:w-auto justify-end">
                           <button
-                            onClick={() => {/* View booking details */}}
+                            onClick={() => {/* View booking details */ }}
                             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                             title="View Details"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          
+
                           {(booking.status === 'pending' || booking.status === 'confirmed') && (
                             <button
                               onClick={() => cancelBooking(booking._id)}
@@ -367,11 +390,10 @@ const BookingsAndMeetingsPage = () => {
                 <button
                   key={filterType}
                   onClick={() => setMeetingFilter(filterType)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    meetingFilter === filterType
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${meetingFilter === filterType
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
                 >
                   {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
                 </button>
@@ -385,7 +407,7 @@ const BookingsAndMeetingsPage = () => {
                   <Video className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No Meetings Found</h3>
                   <p className="text-gray-500">
-                    {meetingFilter === 'all' 
+                    {meetingFilter === 'all'
                       ? 'You don\'t have any meetings scheduled yet.'
                       : `No ${meetingFilter} meetings found.`
                     }
@@ -396,11 +418,10 @@ const BookingsAndMeetingsPage = () => {
                   {meetings.map((meeting) => (
                     <div
                       key={meeting._id}
-                      className={`p-4 sm:p-6 hover:bg-gray-50 transition-colors ${
-                        isMeetingTime(meeting.scheduledDate) && meeting.status === 'scheduled'
-                          ? 'bg-blue-50 border-l-4 border-blue-500'
-                          : ''
-                      }`}
+                      className={`p-4 sm:p-6 hover:bg-gray-50 transition-colors ${isMeetingTime(meeting.scheduledDate) && meeting.status === 'scheduled'
+                        ? 'bg-blue-50 border-l-4 border-blue-500'
+                        : ''
+                        }`}
                     >
                       <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                         <div className="flex-1">
@@ -455,7 +476,7 @@ const BookingsAndMeetingsPage = () => {
                                 <Video className="w-4 h-4" />
                                 Join Meeting
                               </button>
-                              
+
                               <a
                                 href={meeting.meetingLink}
                                 target="_blank"
@@ -477,7 +498,7 @@ const BookingsAndMeetingsPage = () => {
           </div>
         )}
       </div>
-      
+
       <Footer />
     </div>
   );

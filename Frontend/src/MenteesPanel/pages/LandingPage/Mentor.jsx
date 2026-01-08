@@ -44,7 +44,15 @@ export default function Mentor() {
       }
     } catch (err) {
       console.error('Landing mentors load error:', err)
-      setError('Failed to load mentors')
+
+      // Provide specific error messages based on error type
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError('Request timed out. The server is taking longer than expected. Please try again.')
+      } else if (err.message?.includes('Network')) {
+        setError('Network error. Please check your internet connection and try again.')
+      } else {
+        setError('Failed to load mentors. Please try again later.')
+      }
     } finally {
       setLoading(false)
     }
@@ -131,7 +139,13 @@ export default function Mentor() {
           </div>
         ) : error ? (
           <div className="col-span-2 text-center py-12">
-            <p className="text-red-600">{error}</p>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => loadMentors()}
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Try Again
+            </button>
           </div>
         ) : mentors.length === 0 ? (
           <div className="col-span-2 text-center py-12">
@@ -143,7 +157,7 @@ export default function Mentor() {
             const lastName = mentor.userId?.profile?.lastName || ''
             const fullName = `${firstName} ${lastName}`.trim()
             const avatar = mentor.userId?.profile?.avatar || '/a.jpg'
-            const location = mentor.userId?.profile?.country || 'Unknown Location'
+            const location = mentor.userId?.profile?.country || 'Location not specified'
             const title = mentor.title || 'Mentor'
             const ratingValue = Number(mentor.rating ?? 0)
             const rating = Number.isFinite(ratingValue) ? ratingValue.toFixed(1) : '0.0'
@@ -175,7 +189,7 @@ export default function Mentor() {
                     </div>
 
                     <p className="text-sm text-gray-500 mb-2">📍 {location}</p>
-                    <button onClick={() => goToMentorDetails(mentor._id)} className="text-purple-600 font-medium hover:text-purple-700 transition-colors">
+                    <button onClick={() => goToMentorDetails(mentor.slug || mentor._id)} className="text-purple-600 font-medium hover:text-purple-700 transition-colors">
                       View profile →
                     </button>
                   </div>

@@ -160,13 +160,13 @@ class MeetingService {
   async generateMeetingLink(meetingDetails) {
     try {
       console.log('Creating Google Meet meeting...', meetingDetails);
-      
+
       await this.ensureClientInitialized();
 
       // Convert meeting details to API format
       const startTime = new Date(`${meetingDetails.date}T${meetingDetails.time}`);
       const endTime = new Date(startTime.getTime() + (parseInt(meetingDetails.duration) * 60000));
-      
+
       const apiData = {
         title: meetingDetails.topic,
         description: meetingDetails.description || '',
@@ -188,7 +188,7 @@ class MeetingService {
       });
 
       const result = await readResponseBody(response, 'Failed to create meeting');
-      
+
       if (result.success) {
         return {
           success: true,
@@ -202,7 +202,7 @@ class MeetingService {
       } else {
         throw new Error(result.message || 'Failed to create meeting');
       }
-      
+
     } catch (error) {
       console.error('Error creating Google Meet meeting:', error);
       throw error;
@@ -212,8 +212,7 @@ class MeetingService {
   // Get meetings by date range for calendar
   async getMeetingsByDateRange(startDate, endDate) {
     try {
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${apiBase}/api/mentors/meetings/calendar?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`, {
+      const response = await fetch(this.buildUrl(`/calendar?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -222,7 +221,7 @@ class MeetingService {
       });
 
       const result = await readResponseBody(response, 'Failed to fetch meetings');
-      
+
       if (result.success) {
         return {
           success: true,
@@ -241,9 +240,8 @@ class MeetingService {
   // Get meetings for a specific date
   async getMeetingsByDate(date) {
     try {
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
-      const response = await fetch(`${apiBase}/api/mentors/meetings/date/${dateStr}`, {
+      const response = await fetch(this.buildUrl(`/date/${dateStr}`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -252,7 +250,7 @@ class MeetingService {
       });
 
       const result = await readResponseBody(response, 'Failed to fetch meetings');
-      
+
       if (result.success) {
         return {
           success: true,
@@ -280,7 +278,7 @@ class MeetingService {
       });
 
       const result = await readResponseBody(response, 'Failed to delete meeting');
-      
+
       if (result.success) {
         return {
           success: true,
@@ -298,23 +296,23 @@ class MeetingService {
   // Simple validation
   validateMeetingDetails(details) {
     const errors = []
-    
+
     if (!details.menteeId) {
       errors.push('Mentee selection is required')
     }
-    
+
     if (!details.topic || details.topic.trim() === '') {
       errors.push('Topic is required')
     }
-    
+
     if (!details.date) {
       errors.push('Date is required')
     }
-    
+
     if (!details.time) {
       errors.push('Time is required')
     }
-    
+
     return errors
   }
 }

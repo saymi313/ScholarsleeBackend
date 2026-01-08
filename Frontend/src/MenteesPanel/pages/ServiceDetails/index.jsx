@@ -14,9 +14,12 @@ import RelatedServices from "../../components/ServiceDetailsComponents/RelatedSe
 import BookingModal from "../../components/BookingComponents/BookingModal"
 import Header from "../../components/Shared/Header"
 import { menteeServicesAPI } from "../../../utils/api"
+import SEO from "../../../shared/components/SEO"
+import { generateServiceSchema, generateBreadcrumbSchema } from "../../../shared/utils/schema"
+
 
 export default function ServiceDetailsPage() {
-  const { id } = useParams()
+  const { id, mentorSlug, serviceSlug } = useParams()
   const navigate = useNavigate()
   const [service, setService] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -26,21 +29,28 @@ export default function ServiceDetailsPage() {
   const [selectedPackageId, setSelectedPackageId] = useState(null)
 
   useEffect(() => {
-    if (id) {
+    if (id || (mentorSlug && serviceSlug)) {
       loadService()
     }
-  }, [id])
+  }, [id, mentorSlug, serviceSlug])
 
   const loadService = async () => {
     try {
       setLoading(true)
       setError('')
-      
-      console.log('🔍 Loading service with ID:', id)
-      const response = await menteeServicesAPI.getById(id)
+
+      let response;
+      if (id) {
+        console.log('🔍 Loading service with ID:', id)
+        response = await menteeServicesAPI.getById(id)
+      } else if (mentorSlug && serviceSlug) {
+        console.log('🔍 Loading service with slugs:', mentorSlug, serviceSlug)
+        response = await menteeServicesAPI.getBySlugs(mentorSlug, serviceSlug)
+      }
+
       console.log('📡 Service API response:', response)
-      
-      if (response.data && response.data.success) {
+
+      if (response && response.data && response.data.success) {
         console.log('✅ Service data found:', response.data.data.service)
         const fetchedService = response.data.data.service
         setService(fetchedService)
@@ -48,8 +58,8 @@ export default function ServiceDetailsPage() {
           setSelectedPackageId(fetchedService.packages[0]._id)
         }
       } else {
-        console.log('❌ Service not found:', response.data?.message)
-        setError(response.data?.message || 'Service not found')
+        console.log('❌ Service not found:', response?.data?.message)
+        setError(response?.data?.message || 'Service not found')
       }
     } catch (error) {
       console.error('❌ Error loading service:', error)
@@ -62,7 +72,7 @@ export default function ServiceDetailsPage() {
   const handleFeedbackSubmitted = async () => {
     // Refresh feedbacks list
     setRefreshTrigger(prev => prev + 1)
-    
+
     // Reload service to get updated rating
     if (service?._id) {
       try {
@@ -135,58 +145,70 @@ export default function ServiceDetailsPage() {
 
   return (
     <>
-    <Header />
-    <main className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-8 md:py-12 space-y-10">
-      {/* Design brand color */}
-      <style>{`:root { --brand: #5D38DE; }`}</style>
+      <SEO
+        title={`${service?.title || 'Service'} - Scholarslee`}
+        description={service?.description || 'Professional mentorship services.'}
+        schema={[
+          generateServiceSchema(service, service.mentorId?.userId?.profile),
+          generateBreadcrumbSchema([
+            { name: "Home", url: "/" },
+            { name: "Services", url: "/mentees/services" },
+            { name: service?.title || "Service", url: `/mentees/service-details` }
+          ])
+        ]}
+      />
+      <Header />
+      <main className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-8 md:py-12 space-y-10">
+        {/* Design brand color */}
+        <style>{`:root { --brand: #5D38DE; }`}</style>
 
-      <div className="space-y-4">
-        <Breadcrumb service={service} />
-        <ServiceHeader service={service} />
-        <RatingSummary service={service} />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10">
-        <div className="lg:col-span-2 space-y-8">
-          <Overview service={service} />
-          <Features service={service} />
-          <MentorProfile service={service} />
-          <PackagesComparison service={service} />
-          <CommentForm 
-            service={service} 
-            onFeedbackSubmitted={handleFeedbackSubmitted}
-          />
-          <FeedbackList 
-            serviceId={service._id} 
-            refreshTrigger={refreshTrigger}
-          />
-          <RelatedServices service={service} />
+        <div className="space-y-4">
+          <Breadcrumb service={service} />
+          <ServiceHeader service={service} />
+          <RatingSummary service={service} />
         </div>
 
-        <div className="lg:col-span-1">
-          <PricingSlidePanel
-            service={service}
-            onBookNow={() => setShowBookingModal(true)}
-            selectedPackageId={selectedPackageId}
-            onPackageSelect={setSelectedPackageId}
-          />
-        </div>
-      </div>
-    </main>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10">
+          <div className="lg:col-span-2 space-y-8">
+            <Overview service={service} />
+            <Features service={service} />
+            <MentorProfile service={service} />
+            <PackagesComparison service={service} />
+            <CommentForm
+              service={service}
+              onFeedbackSubmitted={handleFeedbackSubmitted}
+            />
+            <FeedbackList
+              serviceId={service._id}
+              refreshTrigger={refreshTrigger}
+            />
+            <RelatedServices service={service} />
+          </div>
 
-    {/* Booking Modal */}
-    <BookingModal 
-      isOpen={showBookingModal}
-      onClose={() => setShowBookingModal(false)}
-      service={service}
-      selectedPackage={service.packages?.find(pkg => pkg._id === selectedPackageId)}
-      onSuccess={(booking) => {
-        console.log('Booking created successfully:', booking);
-        setShowBookingModal(false);
-        // Optionally redirect to bookings page
-        navigate('/mentees/bookings');
-      }}
-    />
+          <div className="lg:col-span-1">
+            <PricingSlidePanel
+              service={service}
+              onBookNow={() => setShowBookingModal(true)}
+              selectedPackageId={selectedPackageId}
+              onPackageSelect={setSelectedPackageId}
+            />
+          </div>
+        </div>
+      </main>
+
+      {/* Booking Modal */}
+      <BookingModal
+        isOpen={showBookingModal}
+        onClose={() => setShowBookingModal(false)}
+        service={service}
+        selectedPackage={service.packages?.find(pkg => pkg._id === selectedPackageId)}
+        onSuccess={(booking) => {
+          console.log('Booking created successfully:', booking);
+          setShowBookingModal(false);
+          // Optionally redirect to bookings page
+          navigate('/mentees/bookings');
+        }}
+      />
     </>
   )
 }

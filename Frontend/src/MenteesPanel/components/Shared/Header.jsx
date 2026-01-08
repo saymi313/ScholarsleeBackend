@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom"
 import React, { useState } from "react"
 import Logo from "../HeaderComponents/Logo"
 import Navigation from "./Navigation"
@@ -14,7 +15,9 @@ export default function Header() {
       <div className="mx-8">
         <div className="bg-white rounded-lg shadow-lg px-6 py-2">
           <div className="flex items-center justify-between h-16">
-            <Logo />
+            <Link to="/">
+              <Logo />
+            </Link>
             <Navigation />
             <div className="flex items-center gap-4">
               <NotificationBell />

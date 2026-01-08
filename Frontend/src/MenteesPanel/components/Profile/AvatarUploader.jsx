@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react"
 import axios from 'axios'
 
-export default function AvatarUploader({ value, onChange }) {
+export default function AvatarUploader({ value, onChange, name = "User" }) {
   const fileRef = useRef(null)
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState(null)
@@ -50,18 +50,22 @@ export default function AvatarUploader({ value, onChange }) {
     }
   }
 
-  const displayImage = preview || (value && value.startsWith('/uploads')
-    ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${value}`
-    : value) || "/u.jpeg"
+  const displayImage = preview || value || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`
 
   return (
     <div className="flex items-center gap-4">
       <div className="relative">
-        <img
-          src={displayImage}
-          alt="avatar"
-          className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border"
-        />
+        {displayImage ? (
+          <img
+            src={displayImage}
+            alt="avatar"
+            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border"
+          />
+        ) : (
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border bg-gray-100 flex items-center justify-center">
+            <span className="text-gray-400 text-2xl">?</span>
+          </div>
+        )}
         {uploading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>

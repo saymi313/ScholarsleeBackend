@@ -1,5 +1,5 @@
-import React from 'react'
-import { Helmet } from 'react-helmet-async'
+import SEO from "../../../shared/components/SEO"
+import { generateOrganizationSchema, generateWebSiteSchema, generateSiteNavigationSchema, generateBreadcrumbSchema } from "../../../shared/utils/schema"
 import Header from "../../components/Shared/Header"
 import HeroSection from "./HeroSection"
 import Partner from "./Partner"
@@ -14,14 +14,17 @@ import FAQS from "./FAQS"
 export default function LandingPage() {
   return (
     <>
-      <Helmet>
-        <title>Scholarslee - Connect with Expert Mentors for Study Abroad Success</title>
-        <meta name="description" content="Find verified mentors to guide you through university applications, visa processes, and career planning. Join 1000+ students achieving their study abroad dreams." />
-        <link rel="canonical" href="https://scholarslee.com/" />
-        <meta property="og:title" content="Scholarslee - Your Gateway to Study Abroad Success" />
-        <meta property="og:description" content="Connect with verified mentors who have been through the journey. Get personalized guidance for university applications, visas, and career planning." />
-        <meta property="og:url" content="https://scholarslee.com/" />
-      </Helmet>
+      <SEO
+        title="Scholarslee - Connect with Expert Mentors for Study Abroad Success"
+        description="Find verified mentors to guide you through university applications, visa processes, and career planning. Join 1000+ students achieving their study abroad dreams."
+        canonical="https://scholarslee.com/"
+        schema={[
+          generateOrganizationSchema(),
+          generateWebSiteSchema(),
+          generateSiteNavigationSchema(),
+          generateBreadcrumbSchema([{ name: "Home", url: "/" }])
+        ]}
+      />
 
       <div className="min-h-screen bg-white font-sans w-full no-zoom">
         <Header />

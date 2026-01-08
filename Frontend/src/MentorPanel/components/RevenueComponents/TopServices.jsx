@@ -3,7 +3,7 @@ import React from 'react'
 const colors = ["bg-blue-500", "bg-teal-500", "bg-purple-500", "bg-orange-500"]
 
 const formatCurrency = (value = 0) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value / 100)
 
 const TopServices = ({ services = [], loading }) => {
   if (loading) {

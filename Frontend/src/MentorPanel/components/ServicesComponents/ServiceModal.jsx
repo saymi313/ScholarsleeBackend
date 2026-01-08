@@ -101,45 +101,52 @@ const ServiceModal = ({ isOpen, onClose, service = null, onSuccess }) => {
     }));
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    
-    // Validate file sizes (max 2MB per file for faster uploads)
-    const maxSize = 2 * 1024 * 1024; // 2MB
+
+    // Validate file sizes (max 5MB per file)
+    const maxSize = 5 * 1024 * 1024; // 5MB
     const oversizedFiles = files.filter(file => file.size > maxSize);
-    
+
     if (oversizedFiles.length > 0) {
-      setError(`Some files are too large. Maximum size is 2MB per file.`);
+      setError(`Some files are too large. Maximum size is 5MB per file.`);
       return;
     }
-    
+
     // Validate total number of files (max 5 images)
     if (formData.images.length + files.length > 5) {
       setError(`Maximum 5 images allowed. You already have ${formData.images.length} images.`);
       return;
     }
-    
-    // Convert files to base64 for instant preview and faster upload
-    const processFiles = async () => {
-      const processedImages = [];
-      
-      for (const file of files) {
-        const base64 = await convertToBase64(file);
-        processedImages.push({
-          file: file,
-          base64: base64,
-          name: file.name,
-          size: file.size
-        });
+
+    setLoading(true);
+    const uploadData = new FormData();
+    files.forEach(file => {
+      uploadData.append('images', file);
+    });
+
+    try {
+      console.log("📤 Starting image upload...", files.length, "files");
+      const res = await servicesAPI.uploadImages(uploadData);
+      console.log("✅ Upload response:", res.data);
+
+      if (res.data?.success) {
+        setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, ...res.data.fileUrls]
+        }));
+        setError('');
+      } else {
+        throw new Error(res.data?.message || 'Upload failed');
       }
-      
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, ...processedImages]
-      }));
-    };
-    
-    processFiles();
+    } catch (err) {
+      console.error('❌ Image upload error:', err);
+      setError(`Failed to upload images: ${err.message}`);
+    } finally {
+      setLoading(false);
+      // Reset input value to allow selecting same file again if needed
+      e.target.value = '';
+    }
   };
 
   const convertToBase64 = (file) => {
@@ -176,11 +183,12 @@ const ServiceModal = ({ isOpen, onClose, service = null, onSuccess }) => {
         throw new Error('Please add at least one package with price and duration');
       }
 
-      // Prepare service data without images for now (for faster upload)
+      // Prepare service data with images (now containing valid URLs)
       const serviceData = {
         ...formData,
         packages: validPackages,
-        images: [] // Skip images for now to make uploads instant
+        // Ensure we send valid strings/URLs, not file objects
+        images: formData.images.filter(img => typeof img === 'string')
       };
 
       console.log('🔧 Saving service data:', serviceData);
@@ -194,7 +202,7 @@ const ServiceModal = ({ isOpen, onClose, service = null, onSuccess }) => {
       }
 
       console.log('🔧 Service save response:', response.data);
-      
+
       if (response.data.success) {
         setSuccess(service ? 'Service updated successfully!' : 'Service created successfully!');
         setTimeout(() => {
@@ -206,7 +214,7 @@ const ServiceModal = ({ isOpen, onClose, service = null, onSuccess }) => {
       }
     } catch (error) {
       console.error('Error saving service:', error);
-      
+
       // Handle specific error types
       if (error.code === 'ECONNABORTED') {
         setError('Upload timeout. Please try again with smaller images or check your connection.');
@@ -224,7 +232,7 @@ const ServiceModal = ({ isOpen, onClose, service = null, onSuccess }) => {
 
   const categories = [
     'Study Abroad Guidance',
-    'University Applications', 
+    'University Applications',
     'Visa Assistance',
     'Career Counseling',
     'Language Learning',
@@ -241,7 +249,7 @@ const ServiceModal = ({ isOpen, onClose, service = null, onSuccess }) => {
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         {/* Backdrop */}
-        <div 
+        <div
           className="fixed inset-0 transition-opacity bg-black bg-opacity-75"
           onClick={onClose}
         />
@@ -275,7 +283,7 @@ const ServiceModal = ({ isOpen, onClose, service = null, onSuccess }) => {
                   <Star className="w-5 h-5 text-[#5D38DE]" />
                   Basic Information
                 </h4>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -333,14 +341,14 @@ const ServiceModal = ({ isOpen, onClose, service = null, onSuccess }) => {
                   <DollarSign className="w-5 h-5 text-[#5D38DE]" />
                   Service Packages
                 </h4>
-                
+
                 {formData.packages.map((pkg, index) => (
                   <div key={index} className="p-4 bg-[#2a2a2a] rounded-lg border border-[#3a3a3a]">
                     <h5 className="text-md font-medium text-white mb-4 flex items-center gap-2">
                       <div className="w-2 h-2 bg-[#5D38DE] rounded-full"></div>
                       {pkg.name} Package
                     </h5>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -423,7 +431,7 @@ const ServiceModal = ({ isOpen, onClose, service = null, onSuccess }) => {
                   <Upload className="w-5 h-5 text-[#5D38DE]" />
                   Service Images
                 </h4>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Upload Images
@@ -442,7 +450,7 @@ const ServiceModal = ({ isOpen, onClose, service = null, onSuccess }) => {
                     {formData.images.map((image, index) => (
                       <div key={index} className="relative group">
                         <img
-                          src={image.base64 || (typeof image === 'string' ? image : URL.createObjectURL(image))}
+                          src={image}
                           alt={`Service ${index + 1}`}
                           className="w-full h-24 object-cover rounded-lg"
                         />
@@ -467,7 +475,7 @@ const ServiceModal = ({ isOpen, onClose, service = null, onSuccess }) => {
                     <span>{uploadProgress}%</span>
                   </div>
                   <div className="w-full bg-[#2a2a2a] rounded-full h-2">
-                    <div 
+                    <div
                       className="bg-[#5D38DE] h-2 rounded-full transition-all duration-300"
                       style={{ width: `${uploadProgress}%` }}
                     ></div>

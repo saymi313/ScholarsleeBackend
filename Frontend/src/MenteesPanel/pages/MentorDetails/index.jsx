@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import { ArrowLeft } from "lucide-react"
 import { mentorsAPI } from "../../../utils/api"
 import Background from "../../components/MentorDetailsComponents/Background"
 // import Recommendations from "../../components/MentorDetailsComponents/Recommendations"
@@ -10,6 +11,9 @@ import Services from "../../components/MentorDetailsComponents/Services"
 import SuccessStory from "../../components/MentorDetailsComponents/SuccessStory"
 import Feedbacks from "../../components/MentorDetailsComponents/Feedbacks"
 import ChatPrivacyPopup from "../../components/ChatsComponents/ChatPrivacyPopup"
+import SEO from "../../../shared/components/SEO"
+import { generateMentorSchema, generateBreadcrumbSchema } from "../../../shared/utils/schema"
+
 
 const MentorDetails = () => {
   const { id } = useParams()
@@ -116,7 +120,7 @@ const MentorDetails = () => {
         <div className="text-center">
           <p className="text-red-600 text-xl mb-4">{error || 'Mentor not found'}</p>
           <button
-            onClick={() => navigate('/mentees/mentor')}
+            onClick={() => navigate('/mentees/mentors')}
             className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700"
           >
             Back to Mentors
@@ -131,7 +135,7 @@ const MentorDetails = () => {
   const lastName = mentorData.userId?.profile?.lastName || ''
   const fullName = `${firstName} ${lastName}`.trim()
   const avatar = mentorData.userId?.profile?.avatar || '/u.jpeg'
-  const location = mentorData.userId?.profile?.country || 'Unknown Location'
+  const location = mentorData.userId?.profile?.country || mentorData.location || 'Location not specified'
   const title = mentorData.title || 'Mentor'
   const bio = mentorData.bio || ''
   const experience = mentorData.experience || []
@@ -141,8 +145,32 @@ const MentorDetails = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+      <SEO
+        title={`${mentorData?.fullName || 'Mentor'} - Scholarslee`}
+        description={mentorData?.bio || 'Learn from expert mentors.'}
+        image={mentorData?.avatar}
+        schema={[
+          generateMentorSchema(mentorData),
+          generateBreadcrumbSchema([
+            { name: "Home", url: "/" },
+            { name: "Mentors", url: "/mentees/mentors" },
+            { name: mentorData?.fullName || "Mentor", url: `/mentees/mentor-details/${id}` }
+          ])
+        ]}
+      />
       {/* Header Section */}
       <div className="bg-gradient-to-r from-[#1f1f1f] to-[#2a2a2a] text-white relative overflow-hidden">
+        {/* Back Button */}
+        <div className="container mx-auto px-3 sm:px-6 pt-4">
+          <button
+            onClick={() => navigate('/mentees/mentors')}
+            className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors group w-fit"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            <span className="text-xs font-medium uppercase tracking-wider">Back to Mentors</span>
+          </button>
+        </div>
+
         {/* Decorative Elements */}
         <div className="absolute top-4 right-4">
           <div className="relative">
@@ -153,7 +181,7 @@ const MentorDetails = () => {
           </div>
         </div>
 
-        <div className="container mx-auto px-3 sm:px-6 py-6 sm:py-8">
+        <div className="container mx-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6">
           <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-8 min-w-0">
             {/* Profile Section */}
             <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:items-center gap-4 sm:gap-6 min-w-0 w-full">
@@ -258,8 +286,8 @@ const MentorDetails = () => {
                   key={tab.name}
                   onClick={() => setActiveTab(tab.name)}
                   className={`py-3 sm:py-4 px-2 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.name
-                      ? "border-[#5D38DE] text-[#5D38DE]"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "border-[#5D38DE] text-[#5D38DE]"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                 >
                   {tab.name}

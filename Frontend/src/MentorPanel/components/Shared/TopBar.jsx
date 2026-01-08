@@ -7,7 +7,7 @@ import socketService from "../../../shared/services/socketService"
 
 const TopBar = () => {
   const navigate = useNavigate()
-  const { mentorLogout, getFullName, getEmail } = useAuth()
+  const { mentorLogout, getFullName, getEmail, user } = useAuth()
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showImageError, setShowImageError] = useState(false)
@@ -18,7 +18,7 @@ const TopBar = () => {
   const [deletingAll, setDeletingAll] = useState(false)
   const dropdownRef = useRef(null)
   const profileMenuRef = useRef(null)
-  
+
   const getInitials = () => {
     const name = getFullName()
     const email = getEmail()
@@ -67,12 +67,12 @@ const TopBar = () => {
   const loadNotifications = async () => {
     try {
       setLoading(true)
-      const response = await notificationAPI.getAll({ 
+      const response = await notificationAPI.getAll({
         status: 'all',
         limit: 20,
         page: 1
       })
-      
+
       if (response.data && response.data.success) {
         setNotifications(response.data.data.notifications || [])
         setUnreadCount(response.data.data.unreadCount || 0)
@@ -113,20 +113,20 @@ const TopBar = () => {
       e.stopPropagation() // Prevent triggering notification click
       e.preventDefault()
     }
-    
+
     // Find the notification to check if it was unread
     const deletedNotification = notifications.find(n => n._id === notificationId)
     const wasUnread = deletedNotification && !deletedNotification.isRead
-    
+
     // Optimistic UI update - remove immediately for better UX
     setNotifications(prev => prev.filter(n => n._id !== notificationId))
     if (wasUnread) {
       setUnreadCount(prev => Math.max(0, prev - 1))
     }
-    
+
     try {
       const response = await notificationAPI.delete(notificationId)
-      
+
       if (!response.data || !response.data.success) {
         console.error('Failed to delete notification:', response.data?.message)
         // Reload notifications if delete failed
@@ -146,7 +146,7 @@ const TopBar = () => {
     setDeletingAll(true)
     try {
       const response = await notificationAPI.deleteAll()
-      
+
       if (response.data && response.data.success) {
         setNotifications([])
         setUnreadCount(0)
@@ -167,7 +167,7 @@ const TopBar = () => {
       // Mark as read if not already read
       if (!notification.isRead) {
         await notificationAPI.markAsRead({ notificationIds: [notification._id] })
-        setNotifications(prev => 
+        setNotifications(prev =>
           prev.map(n => n._id === notification._id ? { ...n, isRead: true, status: 'read' } : n)
         )
         setUnreadCount(prev => Math.max(0, prev - 1))
@@ -176,7 +176,7 @@ const TopBar = () => {
       // Handle action URL - check if it's an external link (Google Meet) or internal route
       if (notification.actionUrl) {
         setShowNotifications(false)
-        
+
         // Check if it's an external URL (starts with http:// or https://)
         if (notification.actionUrl.startsWith('http://') || notification.actionUrl.startsWith('https://')) {
           // Open external link (Google Meet) in a new tab
@@ -272,10 +272,10 @@ const TopBar = () => {
               className="relative p-1.5 sm:p-2 hover:bg-[#242424] rounded-lg transition-colors"
               aria-label="Notifications"
             >
-            <Bell size={18} className="text-gray-300 sm:w-5 sm:h-5" />
-            {unreadCount > 0 && (
-              <span className="absolute top-0.5 sm:top-1 right-0.5 sm:right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            )}
+              <Bell size={18} className="text-gray-300 sm:w-5 sm:h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-0.5 sm:top-1 right-0.5 sm:right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              )}
             </button>
 
             {showNotifications && (
@@ -295,111 +295,110 @@ const TopBar = () => {
                     </div>
                   </div>
                   <div className="max-h-[calc(100vh-56px)] sm:max-h-80 overflow-y-auto">
-                  {loading ? (
-                    <div className="px-4 py-6 text-center text-gray-400 text-sm">Loading...</div>
-                  ) : notifications.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-gray-400 text-sm">No notifications</div>
-                  ) : (
-                    notifications.map((notification) => {
-                      const { icon: Icon, accent } = getNotificationIcon(notification.type)
-                      return (
-                        <div
-                          key={notification._id}
-                          className={`group flex items-start gap-3 px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-[#242424] transition-colors ${
-                            !notification.isRead ? 'bg-[#242424]/50' : ''
-                          }`}
-                        >
-                          <div 
-                            onClick={() => handleNotificationClick(notification)}
-                            className="flex-1 flex items-start gap-3 cursor-pointer min-w-0"
+                    {loading ? (
+                      <div className="px-4 py-6 text-center text-gray-400 text-sm">Loading...</div>
+                    ) : notifications.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-gray-400 text-sm">No notifications</div>
+                    ) : (
+                      notifications.map((notification) => {
+                        const { icon: Icon, accent } = getNotificationIcon(notification.type)
+                        return (
+                          <div
+                            key={notification._id}
+                            className={`group flex items-start gap-3 px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-[#242424] transition-colors ${!notification.isRead ? 'bg-[#242424]/50' : ''
+                              }`}
                           >
-                            <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center ${accent} flex-shrink-0`}>
-                              <Icon className="w-4 h-4 sm:w-4 sm:h-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm sm:text-sm text-white truncate">{notification.title}</p>
-                              <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{notification.message}</p>
-                              <p className="text-xs text-gray-500 mt-1">{formatTimeAgo(notification.sentAt)}</p>
-                              {/* View button for meeting notifications */}
-                              {notification.type === 'meeting_scheduled' && notification.actionUrl && (
-                                <button
-                                  onClick={async (e) => {
-                                    e.stopPropagation()
-                                    e.preventDefault()
-                                    // Mark as read if not already read
-                                    if (!notification.isRead) {
-                                      try {
-                                        await notificationAPI.markAsRead({ notificationIds: [notification._id] })
-                                        setNotifications(prev => 
-                                          prev.map(n => n._id === notification._id ? { ...n, isRead: true, status: 'read' } : n)
-                                        )
-                                        setUnreadCount(prev => Math.max(0, prev - 1))
-                                      } catch (error) {
-                                        console.error('Error marking notification as read:', error)
-                                      }
-                                    }
-                                    
-                                    // For meeting_scheduled notifications, always redirect to /mentees/bookings
-                                    // This handles both new and old notifications in the mentor panel
-                                    // (Mentors shouldn't see mentee notifications, but just in case)
-                                    let targetUrl = notification.actionUrl
-                                    if (notification.type === 'meeting_scheduled') {
-                                      // Force redirect to bookings page regardless of actionUrl (handles old notifications)
-                                      targetUrl = '/mentees/bookings'
-                                    }
-                                    
-                                    // Handle navigation - external links open in new tab, internal routes navigate
-                                    if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
-                                      window.open(targetUrl, '_blank', 'noopener,noreferrer')
-                                    } else {
-                                      navigate(targetUrl)
-                                      setShowNotifications(false)
-                                    }
-                                  }}
-                                  className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-[#5D38DE] text-white rounded-lg hover:bg-[#4d2ec4] transition-colors font-medium text-xs"
-                                >
-                                  <Video className="w-3 h-3" />
-                                  <span>View Meeting</span>
-                                  <ExternalLink className="w-3 h-3" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            {!notification.isRead && (
-                              <span className="mt-1 w-2 h-2 rounded-full bg-[#5D38DE]" />
-                            )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                e.preventDefault()
-                                handleDeleteNotification(notification._id, e)
-                              }}
-                              onMouseDown={(e) => {
-                                e.stopPropagation()
-                                e.preventDefault()
-                              }}
-                              onTouchStart={(e) => {
-                                e.stopPropagation()
-                              }}
-                              className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 p-1.5 hover:bg-red-500/20 active:bg-red-500/30 rounded-lg transition-all text-gray-400 hover:text-red-400 active:text-red-300"
-                              title="Delete notification"
-                              type="button"
-                              aria-label="Delete notification"
+                            <div
+                              onClick={() => handleNotificationClick(notification)}
+                              className="flex-1 flex items-start gap-3 cursor-pointer min-w-0"
                             >
-                              <X className="w-4 h-4" />
-                            </button>
+                              <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center ${accent} flex-shrink-0`}>
+                                <Icon className="w-4 h-4 sm:w-4 sm:h-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm sm:text-sm text-white truncate">{notification.title}</p>
+                                <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{notification.message}</p>
+                                <p className="text-xs text-gray-500 mt-1">{formatTimeAgo(notification.sentAt)}</p>
+                                {/* View button for meeting notifications */}
+                                {notification.type === 'meeting_scheduled' && notification.actionUrl && (
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation()
+                                      e.preventDefault()
+                                      // Mark as read if not already read
+                                      if (!notification.isRead) {
+                                        try {
+                                          await notificationAPI.markAsRead({ notificationIds: [notification._id] })
+                                          setNotifications(prev =>
+                                            prev.map(n => n._id === notification._id ? { ...n, isRead: true, status: 'read' } : n)
+                                          )
+                                          setUnreadCount(prev => Math.max(0, prev - 1))
+                                        } catch (error) {
+                                          console.error('Error marking notification as read:', error)
+                                        }
+                                      }
+
+                                      // For meeting_scheduled notifications, always redirect to /mentees/bookings
+                                      // This handles both new and old notifications in the mentor panel
+                                      // (Mentors shouldn't see mentee notifications, but just in case)
+                                      let targetUrl = notification.actionUrl
+                                      if (notification.type === 'meeting_scheduled') {
+                                        // Force redirect to bookings page regardless of actionUrl (handles old notifications)
+                                        targetUrl = '/mentees/bookings'
+                                      }
+
+                                      // Handle navigation - external links open in new tab, internal routes navigate
+                                      if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
+                                        window.open(targetUrl, '_blank', 'noopener,noreferrer')
+                                      } else {
+                                        navigate(targetUrl)
+                                        setShowNotifications(false)
+                                      }
+                                    }}
+                                    className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-[#5D38DE] text-white rounded-lg hover:bg-[#4d2ec4] transition-colors font-medium text-xs"
+                                  >
+                                    <Video className="w-3 h-3" />
+                                    <span>View Meeting</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {!notification.isRead && (
+                                <span className="mt-1 w-2 h-2 rounded-full bg-[#5D38DE]" />
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  e.preventDefault()
+                                  handleDeleteNotification(notification._id, e)
+                                }}
+                                onMouseDown={(e) => {
+                                  e.stopPropagation()
+                                  e.preventDefault()
+                                }}
+                                onTouchStart={(e) => {
+                                  e.stopPropagation()
+                                }}
+                                className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 p-1.5 hover:bg-red-500/20 active:bg-red-500/30 rounded-lg transition-all text-gray-400 hover:text-red-400 active:text-red-300"
+                                title="Delete notification"
+                                type="button"
+                                aria-label="Delete notification"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      )
-                    })
-                  )}
+                        )
+                      })
+                    )}
                   </div>
                   {notifications.length > 0 && (
                     <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-t border-[#2a2a2a] bg-[#151515] flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
                         {unreadCount > 0 && (
-                          <button 
+                          <button
                             onClick={handleMarkAllAsRead}
                             className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors"
                           >
@@ -407,7 +406,7 @@ const TopBar = () => {
                           </button>
                         )}
                       </div>
-                      <button 
+                      <button
                         onClick={() => setShowDeleteAllModal(true)}
                         className="text-xs sm:text-sm text-red-400 hover:text-red-300 transition-colors flex items-center gap-1.5"
                         title="Delete all notifications"
@@ -432,17 +431,19 @@ const TopBar = () => {
               title="Profile menu"
               className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden border-2 border-[#5D38DE] bg-gray-600 flex items-center justify-center cursor-pointer hover:border-[#6d48ee] transition-colors"
             >
-              {!showImageError ? (
+              {!showImageError && user?.profile?.avatar ? (
                 <img
-                  src="/a.jpg"
+                  src={user.profile.avatar}
                   alt="Profile"
                   className="w-full h-full object-cover"
                   onError={() => setShowImageError(true)}
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-white text-xs sm:text-sm font-semibold">
-                  {getInitials()}
-                </div>
+                <img
+                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(getFullName() || 'User')}&background=random`}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
               )}
             </button>
 
@@ -482,7 +483,7 @@ const TopBar = () => {
         <div className="fixed inset-0 z-[60] overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             {/* Backdrop */}
-            <div 
+            <div
               className="fixed inset-0 transition-opacity bg-black bg-opacity-75"
               onClick={() => !deletingAll && setShowDeleteAllModal(false)}
             />
@@ -515,7 +516,7 @@ const TopBar = () => {
                   <p className="text-gray-300 mb-4">
                     Are you sure you want to delete all notifications? This action cannot be undone and will permanently remove all {notifications.length} notification{notifications.length !== 1 ? 's' : ''} from your account.
                   </p>
-                  
+
                   <div className="bg-[#2a2a2a] rounded-lg p-4 border border-[#3a3a3a]">
                     <h4 className="text-sm font-medium text-gray-300 mb-2">Notification Summary:</h4>
                     <div className="space-y-1 text-sm text-gray-400">

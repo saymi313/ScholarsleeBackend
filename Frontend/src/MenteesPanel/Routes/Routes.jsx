@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import LandingPage from "../pages/LandingPage"
 import Footer from '../components/Shared/Footer'
 import MentorPage from '../pages/MentorPage'
@@ -51,12 +51,13 @@ const AppRoutes = () => {
           <Footer />
         </>
       } />
-      <Route path="/mentees/mentor" element={
+      <Route path="/mentees/mentors" element={
         <>
           <MentorPage />
           <Footer />
         </>
       } />
+      <Route path="/mentees/mentor" element={<Navigate to="/mentees/mentors" replace />} />
       <Route path="/mentees/mentor-details/:id" element={
         <>
           <MentorDetails />
@@ -87,6 +88,19 @@ const AppRoutes = () => {
           <Footer />
         </>
       } />
+      <Route path="/mentees/service-details/:id" element={
+        <>
+          <ServiceDetailsPage />
+          <Footer />
+        </>
+      } />
+      {/* New Pretty URL Route for Services */}
+      <Route path="/service-details/:mentorSlug/:serviceSlug" element={
+        <>
+          <ServiceDetailsPage />
+          <Footer />
+        </>
+      } />
       <Route path="/service-details/:id" element={
         <>
           <ServiceDetailsPage />
@@ -101,17 +115,17 @@ const AppRoutes = () => {
         </>
       } />
       <Route path="/mentees/meetings" element={<RedirectToBookings />} />
-      
+
       <Route path="/pricings" element={
         <>
           <PricingPage />
           <Footer />
         </>
       } />
-       <Route path="/login" element={
+      <Route path="/login" element={
         <>
           <LoginPage />
-         
+
         </>
       } />
       <Route path="/mentees/login" element={
@@ -134,7 +148,7 @@ const AppRoutes = () => {
           <VerifyEmailPage />
         </>
       } />
-     
+
     </Routes>
   )
 }

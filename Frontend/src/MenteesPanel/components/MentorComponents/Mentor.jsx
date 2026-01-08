@@ -35,7 +35,7 @@ export default function Mentor() {
       console.log('👥 Loading mentors...')
       const response = await mentorsAPI.getAll({ limit: 4 })
       console.log('👥 Mentors response:', response.data)
-      
+
       if (response.data && response.data.success) {
         const mentorData = response.data.data?.mentors || response.data.data || []
         setMentors(mentorData)
@@ -55,7 +55,7 @@ export default function Mentor() {
     try {
       setLoading(true)
       console.log('🔍 Searching mentors:', { name: inputName, location: inputLocation })
-      
+
       const params = { limit: 4 }
       if (inputName.trim()) {
         params.search = inputName.trim()
@@ -66,7 +66,7 @@ export default function Mentor() {
 
       const response = await mentorsAPI.getAll(params)
       console.log('🔍 Search response:', response.data)
-      
+
       if (response.data && response.data.success) {
         const mentorData = response.data.data?.mentors || response.data.data || []
         setMentors(mentorData)
@@ -169,7 +169,7 @@ export default function Mentor() {
             const title = mentor.title || 'Mentor'
             const rating = mentor.rating || 0
             const totalReviews = mentor.totalReviews || 0
-            
+
             return (
               <div key={mentor._id} className="bg-white rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
@@ -190,7 +190,7 @@ export default function Mentor() {
                       </div>
                     </div>
                     <p className="text-sm text-gray-500 mb-2">📍 {location}</p>
-                    <button onClick={() => goToMentorDetails(mentor._id)} className="text-purple-600 font-medium hover:text-purple-700 transition-colors">
+                    <button onClick={() => goToMentorDetails(mentor.slug || mentor._id)} className="text-purple-600 font-medium hover:text-purple-700 transition-colors">
                       View profile →
                     </button>
                   </div>

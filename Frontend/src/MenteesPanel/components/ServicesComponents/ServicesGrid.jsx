@@ -93,7 +93,15 @@ export default function ServicesGrid({ searchQuery = "", filters = {} }) {
       }
     } catch (error) {
       console.error("Error loading services:", error)
-      setError("Failed to load services")
+
+      // Provide specific error messages based on error type
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        setError("Request timed out. The server is taking longer than expected. Please try again.")
+      } else if (error.message?.includes('Network')) {
+        setError("Network error. Please check your internet connection and try again.")
+      } else {
+        setError("Failed to load services. Please try again later.")
+      }
     } finally {
       setLoading(false)
     }

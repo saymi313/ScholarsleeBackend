@@ -23,7 +23,7 @@ const ServiceList = () => {
       console.log('🔧 Loading services for ServiceList...');
       const response = await servicesAPI.getAll(filters);
       console.log('🔧 ServiceList response:', response.data);
-      
+
       if (response.data.success) {
         setServices(response.data.data.services || []);
       } else {
@@ -45,12 +45,12 @@ const ServiceList = () => {
         console.log('🗑️ Delete response:', response);
         console.log('🗑️ Delete response data:', response.data);
         console.log('🗑️ Delete response status:', response.status);
-        
+
         // Check for success in multiple ways
-        const isSuccess = response.data?.success === true || 
-                          response.status === 200 || 
-                          response.statusText === 'OK';
-        
+        const isSuccess = response.data?.success === true ||
+          response.status === 200 ||
+          response.statusText === 'OK';
+
         if (isSuccess) {
           console.log('✅ Delete successful, updating UI');
           setServices(services.filter(service => service._id !== serviceId));
@@ -195,7 +195,7 @@ const ServiceList = () => {
                     {service.title}
                   </h3>
                 </div>
-                
+
                 <p className="text-gray-400 text-sm line-clamp-3 mb-4">
                   {service.description}
                 </p>

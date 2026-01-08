@@ -4,10 +4,10 @@ import axiosRetry from 'axios-retry';
 // Create axios instance with base configuration
 const api = axios.create({
   // baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'https://api.scholarslee.com/api',
-  baseURL: 'https://api.scholarslee.com/api', // Production
-  // baseURL: 'http://localhost:5000/api', // Local development
+  // baseURL: 'https://api.scholarslee.com/api', // Production
+  baseURL: 'http://localhost:5000/api', // Local development
 
-  timeout: 30000, // Increased from 10s to 30s for better reliability
+  timeout: 60000, // Increased from 30s to 60s for production reliability
   headers: {
     'Content-Type': 'application/json',
   },
@@ -171,7 +171,9 @@ export const profileAPI = {
   user: {
     get: () => api.get('/users/profile'),
     update: (data) => api.put('/users/profile', data),
-    uploadAvatar: (data) => api.post('/users/avatar', data),
+    uploadAvatar: (data) => api.post('/upload/profile', data, {
+      headers: { 'Content-Type': null } // Let browser set multipart/form-data with boundary
+    }),
     deleteAvatar: () => api.delete('/users/avatar'),
   },
   mentee: {
@@ -202,7 +204,11 @@ export const servicesAPI = {
   getCategories: () => api.get('/mentees/services/meta/categories'),
   getFeatured: () => api.get('/mentees/services/meta/featured'),
   getPopular: () => api.get('/mentees/services/meta/popular'),
+  uploadImages: (data) => api.post('/upload/service', data, {
+    headers: { 'Content-Type': null } // Let browser set multipart/form-data with boundary
+  }),
 };
+
 
 // Mentee Services API (for mentee panel)
 export const menteeServicesAPI = {
@@ -211,6 +217,7 @@ export const menteeServicesAPI = {
   search: (params) => api.get('/mentees/services/search', { params }),
   getByCategory: (category) => api.get(`/mentees/services/category/${category}`),
   getByMentor: (mentorId) => api.get(`/mentees/services/mentor/${mentorId}`),
+  getBySlugs: (mentorSlug, serviceSlug) => api.get(`/mentees/services/details/${mentorSlug}/${serviceSlug}`),
   getCategories: () => api.get('/mentees/services/meta/categories'),
   getFeatured: () => api.get('/mentees/services/meta/featured'),
   getPopular: () => api.get('/mentees/services/meta/popular'),
@@ -223,6 +230,7 @@ export const mentorsAPI = {
   search: (params) => api.get('/mentees/mentors/search', { params }),
   getFeatured: () => api.get('/mentees/mentors/featured'),
   getPopular: () => api.get('/mentees/mentors/popular'),
+  getStudents: (id, params) => api.get(`/mentees/mentors/${id}/students`, { params }),
 };
 
 // Mentor Panel Mentees API (for meeting scheduling)
@@ -380,6 +388,12 @@ export const adminUsersAPI = {
 // Mentor Revenue API
 export const mentorRevenueAPI = {
   getDashboard: () => api.get('/mentors/revenue/dashboard'),
+};
+
+// Mentor Dashboard API
+export const mentorDashboardAPI = {
+  getStats: () => api.get('/mentors/dashboard/stats'),
+  getUpcomingSessions: () => api.get('/mentors/dashboard/upcoming-sessions'),
 };
 
 // Payments API

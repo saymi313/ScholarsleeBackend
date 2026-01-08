@@ -1,53 +1,64 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import meetingService from "../../pages/Meetings/meetingService"
 
-const UpcomingMeetings = () => {
-    const meetings = [
-      {
-        id: 1,
-        name: "Soban Ahsan",
-        service: "High Erasmus Mundus Scholarship Prep",
-        time: "18:30 PM to 19:30 PM",
-        date: "Tomorrow, 12:00 PM",
-        avatar:
-          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/attachments/gen-images/public/abstract-profile-y1cvdWbhSPrGNX7LKZoIaQKKM355F3.png",
-        gradient: "from-purple-600 to-purple-800",
-      },
-      {
-        id: 2,
-        name: "Soban Ahsan",
-        service: "High Erasmus Mundus Scholarship Prep",
-        time: "18:30 PM to 19:30 PM",
-        date: "Tomorrow, 12:00 PM",
-        avatar:
-          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/attachments/gen-images/public/abstract-profile-y1cvdWbhSPrGNX7LKZoIaQKKM355F3.png",
-        gradient: "from-purple-500 to-purple-700",
-      },
-      {
-        id: 3,
-        name: "Soban Ahsan",
-        service: "High Erasmus Mundus Scholarship Prep",
-        time: "18:30 PM to 19:30 PM",
-        date: "Tomorrow, 12:00 PM",
-        avatar:
-          "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/attachments/gen-images/public/abstract-profile-y1cvdWbhSPrGNX7LKZoIaQKKM355F3.png",
-        gradient: "from-purple-600 to-purple-900",
-      },
-    ]
+const UpcomingMeetings = ({ refreshTrigger }) => {
+  const [meetings, setMeetings] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [currentIndex, setCurrentIndex] = useState(0)
 
-    const [currentIndex, setCurrentIndex] = useState(0)
-  
-    const nextSlide = () => {
-      setCurrentIndex((prev) => (prev + 1) % meetings.length)
+  useEffect(() => {
+    const fetchUpcomingMeetings = async () => {
+      try {
+        setLoading(true)
+        const today = new Date()
+        const nextWeek = new Date(today)
+        nextWeek.setDate(today.getDate() + 7)
+
+        const result = await meetingService.getMeetingsByDateRange(today, nextWeek)
+
+        if (result.success && result.meetings) {
+          // Filter only future meetings and sort by date
+          const upcoming = result.meetings
+            .filter(m => new Date(m.scheduledDate) > new Date())
+            .sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate))
+            .map(m => ({
+              id: m._id,
+              name: m.menteeName || "Mentee", // Assuming backend populates this or we use placeholder
+              service: m.title || "Mentorship Session",
+              time: new Date(m.scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              date: new Date(m.scheduledDate).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' }),
+              avatar: m.menteeAvatar || "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/attachments/gen-images/public/abstract-profile-y1cvdWbhSPrGNX7LKZoIaQKKM355F3.png",
+              gradient: "from-purple-600 to-purple-800" // retain random or static gradient
+            }))
+          setMeetings(upcoming)
+        }
+      } catch (error) {
+        console.error("Error fetching upcoming meetings:", error)
+      } finally {
+        setLoading(false)
+      }
     }
 
-    const prevSlide = () => {
-      setCurrentIndex((prev) => (prev - 1 + meetings.length) % meetings.length)
-    }
-  
-    return (
-      <div className="bg-[#242424] rounded-xl p-4 sm:p-6">
-        <h3 className="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Upcomming meetings today</h3>
-  
+    fetchUpcomingMeetings()
+  }, [refreshTrigger])
+
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % meetings.length)
+  }
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + meetings.length) % meetings.length)
+  }
+
+  return (
+    <div className="bg-[#242424] rounded-xl p-4 sm:p-6">
+      <h3 className="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Upcoming meetings (Next 7 Days)</h3>
+
+      {loading ? (
+        <div className="text-center py-8 text-gray-400">Loading...</div>
+      ) : meetings.length === 0 ? (
+        <div className="text-center py-8 text-gray-400">No upcoming meetings scheduled.</div>
+      ) : (
         <div className="space-y-3 sm:space-y-4">
           {/* Navigation buttons - positioned outside content */}
           {meetings.length > 1 && (
@@ -77,7 +88,7 @@ const UpcomingMeetings = () => {
 
           {/* Carousel content */}
           <div className="relative overflow-hidden">
-            <div 
+            <div
               className="flex transition-transform duration-300 ease-in-out"
               style={{ transform: `translateX(-${currentIndex * 100}%)` }}
             >
@@ -94,7 +105,7 @@ const UpcomingMeetings = () => {
                         <h4 className="text-white font-medium text-sm sm:text-base truncate">{meeting.name}</h4>
                       </div>
                     </div>
-      
+
                     <div className="space-y-1">
                       <p className="text-white/90 text-xs sm:text-sm break-words">{meeting.service}</p>
                       <p className="text-white/70 text-xs">{meeting.time}</p>
@@ -113,17 +124,16 @@ const UpcomingMeetings = () => {
                 <button
                   key={index}
                   onClick={() => setCurrentIndex(index)}
-                  className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-colors ${
-                    index === currentIndex ? 'bg-white' : 'bg-white/30'
-                  }`}
+                  className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-colors ${index === currentIndex ? 'bg-white' : 'bg-white/30'
+                    }`}
                 />
               ))}
             </div>
           )}
         </div>
-      </div>
-    )
-  }
-  
-  export default UpcomingMeetings
-  
+      )}
+    </div>
+  )
+}
+
+export default UpcomingMeetings

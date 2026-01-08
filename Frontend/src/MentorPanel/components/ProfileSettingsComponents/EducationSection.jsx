@@ -1,13 +1,76 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react"
 import { Plus, Trash2, GraduationCap } from "lucide-react"
 import { mentorProfileAPI } from "../../../utils/api"
 
-const EducationSection = () => {
+const EducationSection = forwardRef((props, ref) => {
   const [educations, setEducations] = useState([])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState("")
+  const [validationErrors, setValidationErrors] = useState({})
+
+  // Expose getData method to parent
+  useImperativeHandle(ref, () => ({
+    getData: () => educations
+  }))
+
+  // Validation function
+  const validateField = (field, value, eduId) => {
+    const errors = { ...validationErrors }
+    const key = `${eduId}-${field}`
+
+    switch (field) {
+      case 'degree':
+        if (!value || value.trim() === '') {
+          errors[key] = 'Degree is required'
+        } else if (value.length < 3) {
+          errors[key] = 'Degree must be at least 3 characters'
+        } else {
+          delete errors[key]
+        }
+        break
+      case 'institution':
+        if (!value || value.trim() === '') {
+          errors[key] = 'Institution is required'
+        } else if (value.length < 3) {
+          errors[key] = 'Institution must be at least 3 characters'
+        } else {
+          delete errors[key]
+        }
+        break
+      case 'year':
+        const currentYear = new Date().getFullYear()
+        const yearNum = parseInt(value)
+        if (!value) {
+          errors[key] = 'Year is required'
+        } else if (isNaN(yearNum) || yearNum < 1900) {
+          errors[key] = 'Year must be 1900 or later'
+        } else if (yearNum > currentYear + 10) {
+          errors[key] = `Year cannot be more than ${currentYear + 10}`
+        } else {
+          delete errors[key]
+        }
+        break
+      case 'gpa':
+        if (value && value !== '') {
+          const gpaNum = parseFloat(value)
+          if (isNaN(gpaNum) || gpaNum < 0 || gpaNum > 4.0) {
+            errors[key] = 'GPA must be between 0.0 and 4.0'
+          } else {
+            delete errors[key]
+          }
+        } else {
+          delete errors[key] // GPA is optional
+        }
+        break
+      default:
+        delete errors[key]
+    }
+
+    setValidationErrors(errors)
+    return !errors[key]
+  }
 
   useEffect(() => {
     loadEducationData()
@@ -32,55 +95,68 @@ const EducationSection = () => {
     }
   }
 
-  const addEducation = async () => {
-    try {
-      setLoading(true)
-      const newEdu = {
-        degree: "Bachelor's Degree",
-        institution: "",
-        year: new Date().getFullYear(),
-        field: "",
-        gpa: 0
-      }
-      const response = await mentorProfileAPI.addEducation(newEdu)
-      if (response.data?.success) {
-        await loadEducationData() // Reload to get the ID
-        setMessage("✓ Education added")
-        setTimeout(() => setMessage(""), 3000)
-      }
-    } catch (error) {
-      setMessage("✗ Failed to add")
-      console.error(error)
-    } finally {
-      setLoading(false)
+  const addEducation = () => {
+    // Add to local state immediately to show input fields
+    const newEdu = {
+      _id: `temp-${Date.now()}`, // Temporary ID until saved
+      degree: "",
+      institution: "",
+      year: new Date().getFullYear(),
+      field: "",
+      gpa: ""
     }
+    setEducations([...educations, newEdu])
   }
 
   const updateEducation = async (id, field, value) => {
+    // Validate field
+    validateField(field, value, id)
+
     // Update local state immediately for better UX
-    setEducations(educations.map(edu =>
+    const updatedEducations = educations.map(edu =>
       edu._id === id ? { ...edu, [field]: value } : edu
-    ))
+    )
+    setEducations(updatedEducations)
 
     // Debounce the API call
     clearTimeout(window.eduUpdateTimeout)
     window.eduUpdateTimeout = setTimeout(async () => {
       try {
-        const eduToUpdate = educations.find(e => e._id === id)
+        const eduToUpdate = updatedEducations.find(e => e._id === id)
         if (eduToUpdate) {
-          await mentorProfileAPI.updateEducation(id, {
-            ...eduToUpdate,
-            [field]: value
-          })
+          // Check if this is a new education (temporary ID)
+          if (id.toString().startsWith('temp-')) {
+            // Need to create it first via addEducation API
+            const { _id, ...eduData } = eduToUpdate // Remove temp ID
+            const response = await mentorProfileAPI.addEducation(eduData)
+            if (response.data?.success) {
+              // Replace temp ID with real ID from backend
+              await loadEducationData()
+              setMessage("✓ Education saved")
+              setTimeout(() => setMessage(""), 3000)
+            }
+          } else {
+            // Update existing education
+            await mentorProfileAPI.updateEducation(id, eduToUpdate)
+          }
         }
       } catch (error) {
         console.error('Update error:', error)
+        setMessage("✗ Failed to save")
+        setTimeout(() => setMessage(""), 3000)
       }
     }, 1000)
   }
 
   const removeEducation = async (id) => {
     try {
+      // If it's a temporary ID, just remove from local state
+      if (id.toString().startsWith('temp-')) {
+        setEducations(educations.filter(edu => edu._id !== id))
+        return
+      }
+
+      // Otherwise, delete from backend
       setLoading(true)
       await mentorProfileAPI.deleteEducation(id)
       setEducations(educations.filter(edu => edu._id !== id))
@@ -135,27 +211,53 @@ const EducationSection = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pr-12 sm:pr-14">
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Degree</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Degree <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={edu.degree}
                     onChange={(e) => updateEducation(edu._id, 'degree', e.target.value)}
-                    className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 border border-[#3a3a3a] focus:border-[#5D38DE] focus:outline-none text-sm sm:text-base"
+                    className={`w-full bg-[#1a1a1a] text-white rounded-lg p-3 border focus:outline-none text-sm sm:text-base transition-colors ${validationErrors[`${edu._id}-degree`]
+                      ? 'border-red-500 focus:border-red-500'
+                      : edu.degree && edu.degree.length >= 3
+                        ? 'border-green-500 focus:border-green-500'
+                        : 'border-[#3a3a3a] focus:border-[#5D38DE]'
+                      }`}
                     placeholder="e.g., Bachelor's in Computer Science"
                   />
+                  {validationErrors[`${edu._id}-degree`] ? (
+                    <p className="text-red-400 text-xs mt-1">{validationErrors[`${edu._id}-degree`]}</p>
+                  ) : (
+                    <p className="text-gray-500 text-xs mt-1">Required: Your degree or qualification</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Institution</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Institution <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={edu.institution}
                     onChange={(e) => updateEducation(edu._id, 'institution', e.target.value)}
-                    className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 border border-[#3a3a3a] focus:border-[#5D38DE] focus:outline-none text-sm sm:text-base"
+                    className={`w-full bg-[#1a1a1a] text-white rounded-lg p-3 border focus:outline-none text-sm sm:text-base transition-colors ${validationErrors[`${edu._id}-institution`]
+                      ? 'border-red-500 focus:border-red-500'
+                      : edu.institution && edu.institution.length >= 3
+                        ? 'border-green-500 focus:border-green-500'
+                        : 'border-[#3a3a3a] focus:border-[#5D38DE]'
+                      }`}
                     placeholder="University name"
                   />
+                  {validationErrors[`${edu._id}-institution`] ? (
+                    <p className="text-red-400 text-xs mt-1">{validationErrors[`${edu._id}-institution`]}</p>
+                  ) : (
+                    <p className="text-gray-500 text-xs mt-1">Required: Name of the institution</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Field of Study</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Field of Study
+                  </label>
                   <input
                     type="text"
                     value={edu.field}
@@ -163,16 +265,29 @@ const EducationSection = () => {
                     className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 border border-[#3a3a3a] focus:border-[#5D38DE] focus:outline-none text-sm sm:text-base"
                     placeholder="e.g., Computer Science"
                   />
+                  <p className="text-gray-500 text-xs mt-1">Optional: Your major or specialization</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Year</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">
+                    Year <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="number"
                     value={edu.year}
                     onChange={(e) => updateEducation(edu._id, 'year', parseInt(e.target.value))}
-                    className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 border border-[#3a3a3a] focus:border-[#5D38DE] focus:outline-none text-sm sm:text-base"
+                    className={`w-full bg-[#1a1a1a] text-white rounded-lg p-3 border focus:outline-none text-sm sm:text-base transition-colors ${validationErrors[`${edu._id}-year`]
+                      ? 'border-red-500 focus:border-red-500'
+                      : edu.year && edu.year >= 1900 && edu.year <= new Date().getFullYear() + 10
+                        ? 'border-green-500 focus:border-green-500'
+                        : 'border-[#3a3a3a] focus:border-[#5D38DE]'
+                      }`}
                     placeholder="2024"
                   />
+                  {validationErrors[`${edu._id}-year`] ? (
+                    <p className="text-red-400 text-xs mt-1">{validationErrors[`${edu._id}-year`]}</p>
+                  ) : (
+                    <p className="text-gray-500 text-xs mt-1">Required: Graduation year (1900-{new Date().getFullYear() + 10})</p>
+                  )}
                 </div>
                 <div className="lg:col-span-2">
                   <label className="block text-sm font-medium text-gray-400 mb-2">GPA (Optional)</label>
@@ -181,9 +296,19 @@ const EducationSection = () => {
                     step="0.01"
                     value={edu.gpa}
                     onChange={(e) => updateEducation(edu._id, 'gpa', parseFloat(e.target.value))}
-                    className="w-full bg-[#1a1a1a] text-white rounded-lg p-3 border border-[#3a3a3a] focus:border-[#5D38DE] focus:outline-none text-sm sm:text-base"
+                    className={`w-full bg-[#1a1a1a] text-white rounded-lg p-3 border focus:outline-none text-sm sm:text-base transition-colors ${validationErrors[`${edu._id}-gpa`]
+                      ? 'border-red-500 focus:border-red-500'
+                      : edu.gpa && parseFloat(edu.gpa) >= 0 && parseFloat(edu.gpa) <= 4.0
+                        ? 'border-green-500 focus:border-green-500'
+                        : 'border-[#3a3a3a] focus:border-[#5D38DE]'
+                      }`}
                     placeholder="e.g., 3.8"
                   />
+                  {validationErrors[`${edu._id}-gpa`] ? (
+                    <p className="text-red-400 text-xs mt-1">{validationErrors[`${edu._id}-gpa`]}</p>
+                  ) : (
+                    <p className="text-gray-500 text-xs mt-1">Optional: Grade Point Average on 4.0 scale (0.0 - 4.0)</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -192,6 +317,8 @@ const EducationSection = () => {
       </div>
     </div>
   )
-}
+})
+
+EducationSection.displayName = 'EducationSection'
 
 export default EducationSection

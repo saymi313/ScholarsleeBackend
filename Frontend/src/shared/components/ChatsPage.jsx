@@ -36,13 +36,13 @@ export default function ChatsPage({
   const token = useAuthToken()
   const { socket, connected } = useSocket(token)
   const [searchParams, setSearchParams] = useSearchParams()
-  
-  const { 
-    conversations, 
-    loading, 
-    error, 
+
+  const {
+    conversations,
+    loading,
+    error,
     fetchConversations,
-    onlineUsers 
+    onlineUsers
   } = useChat()
 
   const [selectedChatId, setSelectedChatId] = useState(null)
@@ -55,7 +55,7 @@ export default function ChatsPage({
     const minutes = Math.floor(diff / 60000)
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
-    
+
     if (minutes < 1) return 'now'
     if (minutes < 60) return `${minutes}m ago`
     if (hours < 24) return `${hours}h ago`
@@ -72,42 +72,57 @@ export default function ChatsPage({
   // Handle query parameters for creating conversations (e.g., ?mentorId=...)
   useEffect(() => {
     if (!onCreateConversation) return
-    
+
     const mentorId = searchParams.get('mentorId')
     const mentorName = searchParams.get('name')
     const mentorAvatar = searchParams.get('avatar')
-    
-    if (mentorId && !creatingConversation && conversations.length > 0) {
-      // Check if conversation already exists
+
+    // Only proceed if we have a mentorId and we are not currently creating a conversation
+    if (mentorId && !creatingConversation) {
+      console.log('🔍 Processing chat init params:', { mentorId, mentorName, conversationsCount: conversations.length, loading });
+
+      // If conversations are still loading, wait (unless we want to optimistically search)
+      // But we can check if it exists in the current list
       const existingChat = conversations.find(c => c.participant?._id === mentorId)
-      
+
       if (existingChat) {
+        console.log('✅ Found existing chat, opening:', existingChat.conversationId);
         // Open existing conversation
         setSelectedChatId(existingChat.conversationId)
         setSearchParams({})
-      } else if (token) {
-        // Create new conversation
-        onCreateConversation(mentorId, mentorName, mentorAvatar, {
-          setCreatingConversation,
-          setSelectedChatId,
-          setSearchParams
-        })
+      } else {
+        // If not found in current list...
+        if (loading) {
+          console.log('⏳ Conversations loading, waiting...');
+          // If loading, we do nothing and wait for next render when loading is false
+          return;
+        }
+
+        // If not loading and not found, creates new conversation
+        if (token) {
+          console.log('🆕 Chat not found in list, creating new...');
+          onCreateConversation(mentorId, mentorName, mentorAvatar, {
+            setCreatingConversation,
+            setSelectedChatId,
+            setSearchParams
+          })
+        }
       }
     }
-  }, [searchParams, conversations, creatingConversation, token, onCreateConversation, setSearchParams])
+  }, [searchParams, conversations, creatingConversation, token, onCreateConversation, setSearchParams, loading])
 
   // Transform conversations to chat format for ChatsSidebar
   const chats = useMemo(() => {
     return conversations.map(conv => ({
       id: conv.conversationId,
       conversationId: conv.conversationId,
-      name: conv.participant ? 
-        `${conv.participant.profile?.firstName || ''} ${conv.participant.profile?.lastName || ''}`.trim() : 
+      name: conv.participant ?
+        `${conv.participant.profile?.firstName || ''} ${conv.participant.profile?.lastName || ''}`.trim() :
         'Unknown',
       message: conv.lastMessage?.content || 'No messages yet',
       avatar: conv.participant?.profile?.avatar || '/u.jpeg',
       unread: conv.unreadCount || 0,
-      time: conv.lastMessage?.timestamp || conv.lastMessage?.createdAt ? 
+      time: conv.lastMessage?.timestamp || conv.lastMessage?.createdAt ?
         formatTime(new Date(conv.lastMessage.timestamp || conv.lastMessage.createdAt)) : '',
       isPinned: conv.isPinned || false,
       isMuted: conv.isMuted || false,
@@ -152,13 +167,13 @@ export default function ChatsPage({
       <div className={`flex flex-col min-h-screen ${bgColor} ${textColor} font-['Poppins'] overflow-x-hidden`}>
         {/* Header - full width at top */}
         {Sidebar && <Sidebar />}
-        
+
         {/* Main content area */}
         <main className="flex-1 p-0 md:p-6 flex flex-col h-[calc(100vh-64px)] md:h-auto">
           <div className={`flex-1 ${theme === 'dark' ? 'bg-[#111111]' : 'bg-white md:rounded-2xl md:shadow-lg md:border md:border-gray-200'} overflow-hidden flex flex-col md:flex-row`}>
             {/* Chat Sidebar - List of conversations */}
             <div className={`${selectedChat ? 'hidden md:block' : 'block'} w-full md:w-[300px] md:flex-shrink-0 mentees-scroll-white overflow-y-auto`}>
-              <ChatsSidebar 
+              <ChatsSidebar
                 chats={chats}
                 conversations={conversations}
                 selectedChat={selectedChat}
@@ -168,7 +183,7 @@ export default function ChatsPage({
                 onlineUsers={onlineUsers}
               />
             </div>
-            
+
             {/* Chat View - Main chat area */}
             <div className={`${selectedChat ? 'block' : 'hidden md:block'} flex-1 mentees-scroll-white overflow-y-auto`}>
               {selectedChat ? (
@@ -198,12 +213,12 @@ export default function ChatsPage({
     <div className={`flex h-screen ${bgColor} ${textColor} font-['Poppins'] overflow-hidden`}>
       {/* Sidebar - on the left */}
       {Sidebar && <Sidebar hideMobileMenu={!!selectedChat} />}
-      
+
       {/* Chat Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Chat Sidebar - List of conversations */}
         <div className={`${selectedChat ? 'hidden md:block' : 'block'} w-full md:w-[300px] md:flex-shrink-0 bg-[#111111] overflow-y-auto`}>
-          <ChatsSidebar 
+          <ChatsSidebar
             chats={chats}
             conversations={conversations}
             selectedChat={selectedChat}
@@ -213,7 +228,7 @@ export default function ChatsPage({
             onlineUsers={onlineUsers}
           />
         </div>
-        
+
         {/* Chat View - Main chat area */}
         <div className={`${selectedChat ? 'block' : 'hidden md:block'} flex-1 bg-[#111111] overflow-hidden`}>
           {selectedChat ? (

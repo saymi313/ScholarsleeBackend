@@ -1,28 +1,70 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react"
 import { Plus, X, Code } from "lucide-react"
+import { profileAPI } from "../../../utils/api"
 
-const SkillsSection = () => {
-  const [skills, setSkills] = useState([
-    { id: 1, name: "React.js", level: 90 },
-    { id: 2, name: "Node.js", level: 85 },
-    { id: 3, name: "TypeScript", level: 80 },
-    { id: 4, name: "Python", level: 75 },
-    { id: 5, name: "AWS", level: 70 },
-  ])
-
+const SkillsSection = forwardRef((props, ref) => {
+  const [skills, setSkills] = useState([])
+  const [loading, setLoading] = useState(false)
   const [newSkill, setNewSkill] = useState({ name: "", level: 50 })
 
-  const addSkill = () => {
-    if (newSkill.name.trim()) {
-      setSkills([...skills, { id: Date.now(), ...newSkill }])
-      setNewSkill({ name: "", level: 50 })
+  // Expose getData method to parent
+  useImperativeHandle(ref, () => ({
+    getData: () => skills
+  }))
+
+  // Load skills from mentor profile
+  useEffect(() => {
+    loadSkills()
+  }, [])
+
+  const loadSkills = async () => {
+    try {
+      const response = await profileAPI.mentor.get()
+      if (response.data?.success && response.data.data.profile?.specializations) {
+        // Convert specializations (strings) to skills objects
+        const skillsData = response.data.data.profile.specializations.map((skill, index) => ({
+          id: index + 1,
+          name: skill,
+          level: 80 // Default level since we don't store it in backend
+        }))
+        setSkills(skillsData)
+      }
+    } catch (error) {
+      console.error('Error loading skills:', error)
+      setSkills([])
     }
   }
 
-  const removeSkill = (id) => {
-    setSkills(skills.filter((skill) => skill.id !== id))
+  const saveSkillsToBackend = async (updatedSkills) => {
+    try {
+      // Extract just the names for backend specializations array
+      const specializations = updatedSkills.map(s => s.name)
+      await profileAPI.mentor.update({ specializations })
+    } catch (error) {
+      console.error('Error saving skills:', error)
+    }
+  }
+
+  const addSkill = async () => {
+    if (newSkill.name.trim()) {
+      const newSkillObj = { id: Date.now(), ...newSkill }
+      const updatedSkills = [...skills, newSkillObj]
+      setSkills(updatedSkills)
+      setNewSkill({ name: "", level: 50 })
+
+      // Save to backend
+      await saveSkillsToBackend(updatedSkills)
+    }
+  }
+
+  const removeSkill = async (id) => {
+    const updatedSkills = skills.filter((skill) => skill.id !== id)
+    setSkills(updatedSkills)
+
+    // Save to backend
+    await saveSkillsToBackend(updatedSkills)
   }
 
   const updateSkillLevel = (id, level) => {
@@ -110,6 +152,8 @@ const SkillsSection = () => {
       </div>
     </div>
   )
-}
+})
+
+SkillsSection.displayName = 'SkillsSection'
 
 export default SkillsSection

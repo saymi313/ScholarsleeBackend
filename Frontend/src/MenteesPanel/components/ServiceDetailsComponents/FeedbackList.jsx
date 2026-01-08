@@ -33,11 +33,11 @@ export default function FeedbackList({ serviceId, refreshTrigger }) {
         setFeedbacks(response.data.data?.feedbacks || []);
         setPagination(response.data.data?.pagination || pagination);
       } else {
-        setError(response.data?.message || 'Failed to load feedbacks');
+        setError(response.data?.message || 'Please login or register to view feedbacks');
       }
     } catch (error) {
       console.error('Error loading feedbacks:', error);
-      setError('Failed to load feedbacks. Please try again.');
+      setError('Please login or register your account to view feedbacks.');
     } finally {
       setLoading(false);
     }
@@ -77,7 +77,7 @@ export default function FeedbackList({ serviceId, refreshTrigger }) {
   const getMenteeName = (menteeId) => {
     if (!menteeId) return 'Anonymous';
     if (typeof menteeId === 'string') return 'Anonymous';
-    
+
     const firstName = menteeId.profile?.firstName || '';
     const lastName = menteeId.profile?.lastName || '';
     return `${firstName} ${lastName}`.trim() || 'Anonymous';
@@ -181,11 +181,10 @@ export default function FeedbackList({ serviceId, refreshTrigger }) {
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <Star
                                   key={star}
-                                  className={`w-4 h-4 ${
-                                    star <= feedback.rating
+                                  className={`w-4 h-4 ${star <= feedback.rating
                                       ? 'text-yellow-400 fill-current'
                                       : 'text-gray-300'
-                                  }`}
+                                    }`}
                                 />
                               ))}
                               <span className="ml-1 text-sm font-medium text-gray-700">
