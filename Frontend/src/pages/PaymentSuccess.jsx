@@ -27,10 +27,10 @@ export default function PaymentSuccess() {
           setPayment(response.data.data.payment)
           clearCheckout()
         } else {
-          setError(response.data.message || "Unable to verify payment")
+          setError(response.data.message || "We couldn't verify your payment. Please contact support if you were charged.")
         }
       } catch (verificationError) {
-        setError(verificationError.message || "Unable to verify payment")
+        setError(verificationError.message || "We couldn't verify your payment. Please contact support if you were charged.")
       } finally {
         setLoading(false)
       }

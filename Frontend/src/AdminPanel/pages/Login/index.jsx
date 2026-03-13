@@ -1,10 +1,11 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { adminAuthAPI } from "../../../utils/api"
+import { useAuth } from "../../../context/AuthContext"
 import { Lock, Mail, Loader2, Eye, EyeOff } from "lucide-react"
 
 export default function AdminLogin() {
   const navigate = useNavigate()
+  const { adminLogin } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -25,24 +26,18 @@ export default function AdminLogin() {
 
       // Normalize email to lowercase before sending
       const normalizedEmail = email.toLowerCase().trim()
-      
-      const response = await adminAuthAPI.login(normalizedEmail, password)
-      
-      if (response.data?.success) {
-        // Store token and user data
-        localStorage.setItem('token', response.data.data.token)
-        localStorage.setItem('user', JSON.stringify(response.data.data.user))
-        
+
+      const result = await adminLogin({ email: normalizedEmail, password })
+
+      if (result.success) {
         // Redirect to admin dashboard
         navigate('/admin/dashboard')
       } else {
-        setError(response.data?.message || "Login failed. Please check your credentials.")
+        setError(result.error || "Login failed. Please check your credentials.")
       }
     } catch (err) {
       console.error("Admin login error:", err)
-      // Check if it's a validation error or credentials error
-      const errorMessage = err.response?.data?.message || err.message || "Login failed. Please try again."
-      setError(errorMessage)
+      setError(err.message || "Login failed. Please try again.")
     } finally {
       setLoading(false)
     }

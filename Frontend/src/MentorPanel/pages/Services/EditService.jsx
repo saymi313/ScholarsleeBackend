@@ -22,15 +22,15 @@ const EditService = () => {
       console.log('🔧 Loading service for edit:', id);
       const response = await servicesAPI.getById(id);
       console.log('🔧 Edit service response:', response.data);
-      
+
       if (response.data.success) {
         setService(response.data.data);
       } else {
-        setError(response.data.message || 'Failed to load service');
+        setError(response.data.message || "We couldn't load this service. Please try again.");
       }
     } catch (error) {
       console.error('Error loading service:', error);
-      setError('Failed to load service');
+      setError("We couldn't load this service. Please try again.");
     } finally {
       setLoading(false);
     }

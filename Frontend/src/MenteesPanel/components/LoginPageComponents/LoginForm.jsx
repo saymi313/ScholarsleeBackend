@@ -35,19 +35,19 @@ export default function LoginForm() {
     try {
       // Validate required fields
       if (!password) {
-        setError("Password is required.")
+        setError("Please enter your password.")
         return
       }
 
       // For email login, validate email
       if (loginMethod === "email" && !email) {
-        setError("Email is required.")
+        setError("Please enter your email address.")
         return
       }
 
       // For mobile login, validate mobile number
       if (loginMethod === "mobile" && !mobileNumber) {
-        setError("Mobile number is required.")
+        setError("Please enter your mobile number.")
         return
       }
 
@@ -69,6 +69,12 @@ export default function LoginForm() {
       const response = await smartLogin(credentials) // Changed from login to smartLogin
       console.log('LoginForm - Login response:', response);
 
+      // Add proper null/undefined check
+      if (!response) {
+        setError("We couldn't connect to the server. Please check your internet and try again.")
+        return
+      }
+
       if (response.success) {
         // Navigate based on user role
         const userRole = response.user.role
@@ -78,10 +84,11 @@ export default function LoginForm() {
           navigate('/home')
         }
       } else {
-        setError(response.error || "Login failed. Please try again.")
+        setError(response.error || "We couldn't log you in. Please check your email and password.")
       }
     } catch (error) {
-      setError(error.message || "Login failed. Please try again.")
+      console.error('LoginForm - Login error:', error)
+      setError(error.message || "We couldn't log you in. Please check your email and password and try again.")
     } finally {
       setLoading(false)
     }

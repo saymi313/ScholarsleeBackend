@@ -49,7 +49,7 @@ export default function RelatedServices({ service }) {
       } catch (error) {
         console.error('Error fetching related services:', error)
         console.error('Error response:', error.response?.data)
-        setError(error.message)
+        setError("We couldn't load related services right now.")
       } finally {
         setLoading(false)
       }
@@ -77,7 +77,7 @@ export default function RelatedServices({ service }) {
 
       {error && (
         <div className="text-red-600 p-4 border border-red-300 rounded">
-          Error loading related services: {error}
+          {error}
         </div>
       )}
 

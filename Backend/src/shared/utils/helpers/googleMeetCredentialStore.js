@@ -1,8 +1,17 @@
 const fs = require('fs');
 const path = require('path');
+const User = require('../../../shared/models/User');
 
-// Only use file if explicitly set via env var, otherwise default to local file for dev convenience
-const CREDENTIAL_FILENAME = process.env.GOOGLE_MEET_CREDENTIAL_FILE || path.join(process.cwd(), 'google-credentials.json');
+// Path to Google credentials file (if it exists)
+const CREDENTIAL_FILENAME = path.join(__dirname, '../../../../google-credentials.json');
+
+// Base Google Client ID and Secret come from env
+const getBaseConfig = () => {
+  return {
+    clientId: process.env.GOOGLE_CLIENT_ID || null,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || null,
+  };
+};
 
 let cachedCredentials = null;
 
@@ -29,7 +38,7 @@ const readCredentialFile = () => {
   }
 };
 
-const extractClientConfig = (source) => {
+const extractClientConfig = (source, userTokens = null) => {
   const candidate = source ? (source.web || source.installed || source) : {};
 
   // Get redirect URIs from file or env
@@ -42,97 +51,79 @@ const extractClientConfig = (source) => {
     : [];
 
   const allJavascriptOrigins = [...envJavascriptOrigins, ...javascriptOrigins];
-  const inferredRedirect = allJavascriptOrigins.length > 0
-    ? `${allJavascriptOrigins[0].replace(/\/$/, '')}/mentor/google-meet/callback`
-    : null;
-
+  
+  // Use env or fallback for Redirect URI
+  // Note: we can't fully infer mentee vs mentor here easily without context,
+  // but OAuth2Client just needs a valid registered one when getting tokens.
   const fallbackRedirect = process.env.GOOGLE_FALLBACK_REDIRECT_URI || 'http://localhost:3000/mentor/google-meet/callback';
+  const finalRedirectUri = process.env.GOOGLE_REDIRECT_URI || redirectUris[0] || fallbackRedirect;
 
-  // Prioritize environment variables over file values
+  // Use user-specific tokens if provided, fallback to env/file 
+  const accessToken = userTokens?.accessToken || process.env.GOOGLE_ACCESS_TOKEN || candidate.access_token || candidate.accessToken || null;
+  const refreshToken = userTokens?.refreshToken || process.env.GOOGLE_REFRESH_TOKEN || candidate.refresh_token || candidate.refreshToken || null;
+  const scope = userTokens?.scope || process.env.GOOGLE_SCOPE || candidate.scope || 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events';
+  const tokenType = userTokens?.tokenType || process.env.GOOGLE_TOKEN_TYPE || candidate.token_type || 'Bearer';
+  const expiryDate = userTokens?.expiryDate || (process.env.GOOGLE_TOKEN_EXPIRY ? parseInt(process.env.GOOGLE_TOKEN_EXPIRY) : (candidate.expiry_date || null));
+
   return {
     clientId: process.env.GOOGLE_CLIENT_ID || candidate.client_id || null,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || candidate.client_secret || null,
-    redirectUri: process.env.GOOGLE_REDIRECT_URI || redirectUris[0] || candidate.redirect_uri || inferredRedirect || fallbackRedirect,
-    accessToken: process.env.GOOGLE_ACCESS_TOKEN || candidate.access_token || candidate.accessToken || null,
-    refreshToken: process.env.GOOGLE_REFRESH_TOKEN || candidate.refresh_token || candidate.refreshToken || null,
-    scope: process.env.GOOGLE_SCOPE || candidate.scope || 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events',
-    tokenType: process.env.GOOGLE_TOKEN_TYPE || candidate.token_type || 'Bearer',
-    expiryDate: process.env.GOOGLE_TOKEN_EXPIRY ? parseInt(process.env.GOOGLE_TOKEN_EXPIRY) : (candidate.expiry_date || null),
+    redirectUri: finalRedirectUri,
+    accessToken,
+    refreshToken,
+    scope,
+    tokenType,
+    expiryDate,
     projectId: process.env.GOOGLE_PROJECT_ID || candidate.project_id || null,
   };
 };
 
-const getGoogleOAuthCredentials = () => {
+const getGoogleOAuthCredentials = async (userId = null) => {
   // Always reload from env to ensure freshness during debugging
-  // if (cachedCredentials) { return cachedCredentials; }
-
   const fileCredentials = readCredentialFile();
-  const credentials = extractClientConfig(fileCredentials);
+  
+  let userTokens = null;
+  if (userId) {
+    try {
+      const user = await User.findById(userId).select('+googleMeetTokens.accessToken +googleMeetTokens.refreshToken +googleMeetTokens.expiryDate +googleMeetTokens.scope +googleMeetTokens.tokenType');
+      if (user && user.googleMeetTokens) {
+        userTokens = user.googleMeetTokens;
+      }
+    } catch (err) {
+      console.error('Failed to get user google tokens:', err);
+    }
+  }
 
-  console.log('🔒 Google OAuth Config Loaded:');
+  const credentials = extractClientConfig(fileCredentials, userTokens);
+
+  console.log('🔒 Google OAuth Config Loaded for user:', userId || 'GLOBAL');
   console.log('   - Client ID:', credentials.clientId ? credentials.clientId.substring(0, 15) + '...' : 'MISSING');
-  console.log('   - Project ID:', credentials.projectId);
-  console.log('   - Redirect URI:', credentials.redirectUri);
+  console.log('   - Has Access Token:', !!credentials.accessToken);
 
   cachedCredentials = credentials;
   return credentials;
 };
 
-const persistTokens = (tokens = {}) => {
+const persistTokens = async (tokens = {}, userId = null) => {
   try {
-    // If using env vars only (no credential file), tokens are managed via environment
-    // In production, these should be updated in your environment configuration
-    // For development, we can optionally write to file if GOOGLE_MEET_CREDENTIAL_FILE is set
-    if (!CREDENTIAL_FILENAME) {
-      console.warn('⚠️  GOOGLE_MEET_CREDENTIAL_FILE not set. Tokens updated but not persisted to file.');
-      console.warn('   Update your environment variables with the following:');
-      if (tokens.access_token || tokens.accessToken) {
-        console.warn(`   GOOGLE_ACCESS_TOKEN=${tokens.access_token || tokens.accessToken}`);
-      }
-      if (tokens.refresh_token || tokens.refreshToken) {
-        console.warn(`   GOOGLE_REFRESH_TOKEN=${tokens.refresh_token || tokens.refreshToken}`);
-      }
-      if (tokens.scope) {
-        console.warn(`   GOOGLE_SCOPE=${tokens.scope}`);
-      }
-      if (tokens.expiry_date || tokens.expiryDate) {
-        console.warn(`   GOOGLE_TOKEN_EXPIRY=${tokens.expiry_date || tokens.expiryDate}`);
-      }
-
-      // Reset cache so the next read picks up new tokens from env
-      cachedCredentials = null;
+    if (userId) {
+      console.log('Attempting to persist tokens to Database for user:', userId);
+      await User.findByIdAndUpdate(userId, {
+        googleMeetTokens: {
+          accessToken: tokens.access_token || tokens.accessToken,
+          refreshToken: tokens.refresh_token || tokens.refreshToken,
+          scope: tokens.scope,
+          tokenType: tokens.token_type || tokens.tokenType,
+          expiryDate: tokens.expiry_date || tokens.expiryDate
+        }
+      });
+      console.log('Successfully saved tokens to User model.');
+      resetCachedCredentials();
       return true;
     }
 
-    // If credential file is configured, write to it
-    console.log('Attempting to persist tokens to:', CREDENTIAL_FILENAME);
-    const fileCredentials = readCredentialFile() || {};
-    const containerKey = fileCredentials.web ? 'web' : (fileCredentials.installed ? 'installed' : null);
-
-    if (containerKey) {
-      fileCredentials[containerKey] = {
-        ...fileCredentials[containerKey],
-        access_token: tokens.access_token || tokens.accessToken || fileCredentials[containerKey]?.access_token,
-        refresh_token: tokens.refresh_token || tokens.refreshToken || fileCredentials[containerKey]?.refresh_token,
-        scope: tokens.scope || fileCredentials[containerKey]?.scope,
-        token_type: tokens.token_type || fileCredentials[containerKey]?.token_type,
-        expiry_date: tokens.expiry_date || tokens.expiryDate || fileCredentials[containerKey]?.expiry_date,
-      };
-    } else {
-      fileCredentials.access_token = tokens.access_token || tokens.accessToken || fileCredentials.access_token;
-      fileCredentials.refresh_token = tokens.refresh_token || tokens.refreshToken || fileCredentials.refresh_token;
-      fileCredentials.scope = tokens.scope || fileCredentials.scope;
-      fileCredentials.token_type = tokens.token_type || fileCredentials.token_type;
-      fileCredentials.expiry_date = tokens.expiry_date || tokens.expiryDate || fileCredentials.expiry_date;
-    }
-
-    fs.writeFileSync(CREDENTIAL_FILENAME, JSON.stringify(fileCredentials, null, 2), 'utf-8');
-    console.log('Successfully wrote tokens to credential file.');
-
-    // Reset cache so the next read picks up new tokens
-    cachedCredentials = null;
-
-    return true;
+    console.warn('⚠️ No userId provided to persistTokens. Writing globally is disabled.');
+    return false;
   } catch (error) {
     console.error('Failed to persist Google Meet tokens:', error);
     return false;

@@ -132,7 +132,7 @@ api.interceptors.response.use(
         if (!isAuthCheckRequest && !isOnPublicPage && !isPublicApi && !isRoleSelectionRequest) {
           console.log("[Auth Interceptor] Redirecting to login - protected route access denied")
           window.location.href = "/login"
-          return Promise.reject(new Error("Session expired. Please login again."))
+          return Promise.reject(new Error("Your session has expired. Please log in again."))
         }
 
         // For public pages, auth checks, or public API requests - just reject without redirect
@@ -140,14 +140,17 @@ api.interceptors.response.use(
         return Promise.reject(new Error("Authentication required"))
       }
 
-      return Promise.reject(new Error(data.message || "An error occurred"))
+      return Promise.reject(new Error(data.message || "Something went wrong. Please try again."))
     }
 
     if (error.request) {
-      return Promise.reject(new Error("Network error. Please check your connection."))
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        return Promise.reject(new Error("This is taking too long. Please check your internet and try again."))
+      }
+      return Promise.reject(new Error("We couldn't reach the server. Please check your internet connection and try again."))
     }
 
-    return Promise.reject(new Error("An unexpected error occurred"))
+    return Promise.reject(new Error("Something went wrong on our end. Please refresh the page and try again."))
   },
 )
 
@@ -283,7 +286,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("[Auth Init] Unexpected error:", error)
-      setError("Failed to initialize authentication")
+      setError("We couldn't connect to the server. Please refresh the page.")
       setUser(null)
       setIsAuthenticated(false)
     } finally {
@@ -315,7 +318,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: result.data.message }
       }
     } catch (error) {
-      const errorMessage = error.message || "Registration failed"
+      const errorMessage = error.message || "We couldn't create your account. Please check your details and try again."
       setError(errorMessage)
       return { success: false, error: errorMessage }
     } finally {
@@ -407,7 +410,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("[Auth] Smart login error:", error)
-      const errorMessage = error.message || "Login failed"
+      const errorMessage = error.message || "We couldn't log you in. Please check your credentials and try again."
       setError(errorMessage)
       return { success: false, error: errorMessage }
     } finally {
@@ -454,7 +457,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("[Auth] Login error:", error)
-      const errorMessage = error.message || "Login failed"
+      const errorMessage = error.message || "We couldn't log you in. Please check your credentials and try again."
       setError(errorMessage)
       return { success: false, error: errorMessage }
     } finally {
@@ -483,7 +486,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: result.data.message }
       }
     } catch (error) {
-      const errorMessage = error.message || "Mentor registration failed"
+      const errorMessage = error.message || "We couldn't create your mentor account. Please check your details and try again."
       setError(errorMessage)
       return { success: false, error: errorMessage }
     } finally {
@@ -530,7 +533,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("[Auth] Mentor login error:", error)
-      const errorMessage = error.message || "Mentor login failed"
+      const errorMessage = error.message || "We couldn't log you in. Please check your credentials and try again."
       setError(errorMessage)
       return { success: false, error: errorMessage }
     } finally {
@@ -557,7 +560,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: result.data.message }
       }
     } catch (error) {
-      const errorMessage = error.message || "Admin login failed"
+      const errorMessage = error.message || "We couldn't log you in. Please check your credentials and try again."
       setError(errorMessage)
       return { success: false, error: errorMessage }
     } finally {
@@ -675,7 +678,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: result.data.message }
       }
     } catch (error) {
-      const errorMessage = error.message || "Verification failed"
+      const errorMessage = error.message || "We couldn't verify your email. Please check the code and try again."
       return { success: false, error: errorMessage }
     } finally {
       setLoading(false)
@@ -696,7 +699,7 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: result.data.message }
       }
     } catch (error) {
-      const errorMessage = error.message || "Failed to resend verification"
+      const errorMessage = error.message || "We couldn't resend the verification code. Please try again."
       return { success: false, error: errorMessage }
     } finally {
       setLoading(false)

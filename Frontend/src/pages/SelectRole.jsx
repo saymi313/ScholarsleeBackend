@@ -35,11 +35,11 @@ const SelectRole = () => {
                     navigate('/mentees/profile');
                 }
             } else {
-                setError(response.data.message || 'Failed to select role');
+                setError(response.data.message || "We couldn't set your role. Please try again.");
             }
         } catch (err) {
             console.error('Error selecting role:', err);
-            setError('Failed to select role. Please try again.');
+            setError("We couldn't set your role. Please try again.");
         } finally {
             setLoading(false);
         }

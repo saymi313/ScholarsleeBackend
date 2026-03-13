@@ -58,7 +58,7 @@ export default function ContactInfo() {
               </svg>
             }
           >
-            +1012 3456 789
+            (888) 1234-5678
           </InfoRow>
 
           <InfoRow
@@ -74,7 +74,7 @@ export default function ContactInfo() {
             admin@scholarslee.com
           </InfoRow>
 
-          <InfoRow
+          {/* <InfoRow
             icon={
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path
@@ -85,7 +85,7 @@ export default function ContactInfo() {
             }
           >
             Islamabad Capital Territory, Pakistan
-          </InfoRow>
+          </InfoRow> */}
         </div>
 
         {/* Social icons: inline on mobile, pinned bottom-left on md+ */}

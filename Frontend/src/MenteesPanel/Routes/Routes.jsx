@@ -17,6 +17,7 @@ import ChatsPage from '../pages/Chats'
 import BookingsAndMeetingsPage from '../pages/BookingsAndMeetings'
 import RedirectToBookings from '../components/Shared/RedirectToBookings'
 import VerifyEmailPage from '../pages/VerifyEmail'
+import MenteeGoogleMeetCallback from '../pages/BookingsAndMeetings/GoogleMeetCallback'
 
 const AppRoutes = () => {
   return (
@@ -115,6 +116,7 @@ const AppRoutes = () => {
         </>
       } />
       <Route path="/mentees/meetings" element={<RedirectToBookings />} />
+      <Route path="/mentees/google-meet/callback" element={<MenteeGoogleMeetCallback />} />
 
       <Route path="/pricings" element={
         <>

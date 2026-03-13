@@ -1,10 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Trophy, Target, Lightbulb, Heart } from "lucide-react"
+import { Trophy, Target, Lightbulb, Heart, Loader2 } from "lucide-react"
 import { profileAPI } from "../../../utils/api"
+import { useToast } from "../../../context/ToastContext"
+import Toast from "../../components/Shared/Toast"
 
 const SuccessStoryTab = () => {
+  const { showError } = useToast()
   const [story, setStory] = useState({
     title: "",
     background: "",
@@ -15,29 +18,82 @@ const SuccessStoryTab = () => {
     motivation: "",
   })
 
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [showToast, setShowToast] = useState(false)
+
   useEffect(() => {
     const load = async () => {
       try {
+        setLoading(true)
         const res = await profileAPI.mentor.get()
         if (res.data?.success) {
           const s = res.data.data.profile?.successStory || {}
           setStory({
             title: s.title || "",
-            background: s.content || "",
-            challenges: "",
-            journey: "",
-            currentStatus: "",
-            keyLearnings: "",
-            motivation: "",
+            background: s.background || "",
+            challenges: s.challenges || "",
+            journey: s.journey || "",
+            currentStatus: s.currentStatus || "",
+            keyLearnings: s.keyLearnings || "",
+            motivation: s.motivation || "",
           })
         }
-      } catch {}
+      } catch (err) {
+        console.error("Failed to load success story:", err)
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [])
 
+  const handleSave = async () => {
+    try {
+      setSaving(true)
+      const response = await profileAPI.mentor.update({
+        successStory: {
+          title: story.title,
+          background: story.background,
+          challenges: story.challenges,
+          journey: story.journey,
+          currentStatus: story.currentStatus,
+          keyLearnings: story.keyLearnings,
+          motivation: story.motivation,
+          isPublished: true,
+          createdAt: new Date()
+        }
+      })
+
+      if (response.data?.success) {
+        setShowToast(true)
+        setTimeout(() => setShowToast(false), 3000)
+      }
+    } catch (err) {
+      console.error("Failed to save success story:", err)
+      showError("We couldn't save your success story. Please try again.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 text-[#5D38DE] animate-spin" />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
+      {showToast && (
+        <Toast
+          message="Success story saved successfully!"
+          onClose={() => setShowToast(false)}
+        />
+      )}
+
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-[#5D38DE]/20 to-[#1a1a1a] rounded-2xl p-8 border border-[#5D38DE]/30">
         <div className="flex items-center gap-3 mb-4">
@@ -161,23 +217,13 @@ const SuccessStoryTab = () => {
 
       {/* Save Button */}
       <div className="flex justify-end gap-3">
-        <button 
-          onClick={() => {
-            console.log("Preview story:", story)
-            alert("Story preview:\n\n" + story.title + "\n\n" + story.background)
-          }}
-          className="px-8 py-3 bg-[#242424] text-white rounded-xl hover:bg-[#2a2a2a] transition-colors border border-[#3a3a3a]"
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-8 py-3 bg-[#5D38DE] text-white rounded-xl hover:bg-[#4d2ec4] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
-          Preview
-        </button>
-        <button 
-          onClick={() => {
-            console.log("Saving story:", story)
-            alert("Success story saved successfully!")
-          }}
-          className="px-8 py-3 bg-[#5D38DE] text-white rounded-xl hover:bg-[#4d2ec4] transition-colors"
-        >
-          Save Story
+          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+          {saving ? "Saving..." : "Save Story"}
         </button>
       </div>
     </div>

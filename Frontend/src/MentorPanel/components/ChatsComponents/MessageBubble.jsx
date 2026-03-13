@@ -1,5 +1,6 @@
 import React from "react"
 import { Download, Check, CheckCheck } from "lucide-react"
+import NameAvatar from "./NameAvatar"
 
 export default function MessageBubble({ message }) {
   const getFileIcon = (fileName = '') => {
@@ -31,7 +32,7 @@ export default function MessageBubble({ message }) {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    
+
     // Show download notification
     console.log(`Downloading ${message.fileName}`)
   }
@@ -47,7 +48,7 @@ export default function MessageBubble({ message }) {
           )}
           {message.sender === "them" && (
             <div className="flex items-center gap-2 mb-2">
-              <img src={message.avatar || "/a.jpg"} alt="" className="w-6 h-6 rounded-full" />
+              <NameAvatar src={message.avatar} name={message.senderName || 'Student'} size="w-6 h-6" textSize="text-xs" />
               <span className="text-gray-400 text-xs">Tamim</span>
             </div>
           )}
@@ -59,7 +60,7 @@ export default function MessageBubble({ message }) {
               <p className="text-white text-sm font-medium truncate">{message.fileName}</p>
               <p className="text-gray-400 text-xs">{message.fileSize}</p>
             </div>
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation()
                 handleDownload()
@@ -71,13 +72,13 @@ export default function MessageBubble({ message }) {
           </div>
           {message.sender === "me" && (
             <div className="flex items-center gap-1 mt-1 justify-end">
-                {message.seen ? (
-                  <CheckCheck className="w-4 h-4 text-blue-500" />
-                ) : message.delivered ? (
-                  <CheckCheck className="w-4 h-4 text-gray-400" />
-                ) : (
-                  <Check className="w-4 h-4 text-gray-400" />
-                )}
+              {message.seen ? (
+                <CheckCheck className="w-4 h-4 text-blue-500" />
+              ) : message.delivered ? (
+                <CheckCheck className="w-4 h-4 text-gray-400" />
+              ) : (
+                <Check className="w-4 h-4 text-gray-400" />
+              )}
             </div>
           )}
         </div>
@@ -90,14 +91,13 @@ export default function MessageBubble({ message }) {
       <div className="max-w-[85%] md:max-w-md">
         {message.sender === "them" && (
           <div className="flex items-center gap-2 mb-2">
-            <img src={message.avatar || "/a.jpg"} alt="" className="w-6 h-6 rounded-full" />
+            <NameAvatar src={message.avatar} name={message.senderName || 'Student'} size="w-6 h-6" textSize="text-xs" />
             <span className="text-gray-400 text-xs">{message.senderName || 'Student'}</span>
           </div>
         )}
         <div
-          className={`rounded-2xl px-4 py-3 ${
-            message.sender === "me" ? "bg-[#242424] text-white" : "bg-[#5D38DE] text-white"
-          }`}
+          className={`rounded-2xl px-4 py-3 ${message.sender === "me" ? "bg-[#242424] text-white" : "bg-[#5D38DE] text-white"
+            }`}
         >
           <p className="text-sm leading-relaxed">{message.text}</p>
         </div>

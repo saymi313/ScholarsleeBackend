@@ -3,10 +3,12 @@
 import { useState, useEffect, useMemo } from "react"
 import DataTable from "../../components/DataTable"
 import { adminMentorsAPI } from "../../../utils/api"
+import { useToast } from "../../../context/ToastContext"
 import { ResponsiveContainer, PieChart, Pie, Cell, Legend, Tooltip } from "recharts"
 import { Loader2 } from "lucide-react"
 
 export default function MentorsPage() {
+  const { showError } = useToast()
   const [status, setStatus] = useState("all")
   const [pauseFilter, setPauseFilter] = useState("all")
   const [mentors, setMentors] = useState([])
@@ -28,9 +30,8 @@ export default function MentorsPage() {
       key: "paused",
       header: "Login Status",
       render: (value, row) => (
-        <span className={`px-2 py-1 rounded text-xs ${
-          row.paused ? 'bg-rose-500/15 text-rose-300' : 'bg-emerald-500/15 text-emerald-300'
-        }`}>
+        <span className={`px-2 py-1 rounded text-xs ${row.paused ? 'bg-rose-500/15 text-rose-300' : 'bg-emerald-500/15 text-emerald-300'
+          }`}>
           {row.paused ? 'Paused' : 'Active'}
         </span>
       ),
@@ -50,9 +51,8 @@ export default function MentorsPage() {
           <button
             onClick={() => handlePauseLogin(row.id, !row.paused)}
             disabled={actionLoading === row.id}
-            className={`px-2 py-1 rounded text-xs ${
-              row.paused ? 'bg-emerald-500/15 text-emerald-300' : 'bg-yellow-500/15 text-yellow-300'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`px-2 py-1 rounded text-xs ${row.paused ? 'bg-emerald-500/15 text-emerald-300' : 'bg-yellow-500/15 text-yellow-300'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {actionLoading === row.id ? '...' : (row.paused ? 'Unpause' : 'Pause Login')}
           </button>
@@ -73,7 +73,7 @@ export default function MentorsPage() {
       try {
         setLoading(true)
         setError("")
-        
+
         const [mentorsResponse, statusResponse] = await Promise.all([
           adminMentorsAPI.getAllMentors({ status }),
           adminMentorsAPI.getMentorsByStatus()
@@ -82,7 +82,7 @@ export default function MentorsPage() {
         if (mentorsResponse.data?.success) {
           setMentors(mentorsResponse.data.data.mentors || [])
         } else {
-          setError(mentorsResponse.data?.message || "Failed to load mentors")
+          setError(mentorsResponse.data?.message || "We couldn't load mentors. Please try again.")
         }
 
         if (statusResponse.data?.success) {
@@ -90,7 +90,7 @@ export default function MentorsPage() {
         }
       } catch (err) {
         console.error("Error fetching mentors:", err)
-        setError(err.response?.data?.message || err.message || "Failed to load mentors")
+        setError(err.response?.data?.message || err.message || "We couldn't load mentors. Please try again.")
       } finally {
         setLoading(false)
       }
@@ -114,11 +114,11 @@ export default function MentorsPage() {
           setStatusData(statusResponse.data.data?.data || [])
         }
       } else {
-        alert(response.data?.message || "Failed to approve mentor")
+        showError(response.data?.message || "We couldn't approve this mentor. Please try again.")
       }
     } catch (err) {
       console.error("Error approving mentor:", err)
-      alert(err.response?.data?.message || err.message || "Failed to approve mentor")
+      showError(err.response?.data?.message || err.message || "We couldn't approve this mentor. Please try again.")
     } finally {
       setActionLoading(null)
     }
@@ -139,11 +139,11 @@ export default function MentorsPage() {
           setStatusData(statusResponse.data.data?.data || [])
         }
       } else {
-        alert(response.data?.message || "Failed to reject mentor")
+        showError(response.data?.message || "We couldn't reject this mentor. Please try again.")
       }
     } catch (err) {
       console.error("Error rejecting mentor:", err)
-      alert(err.response?.data?.message || err.message || "Failed to reject mentor")
+      showError(err.response?.data?.message || err.message || "We couldn't reject this mentor. Please try again.")
     } finally {
       setActionLoading(null)
     }
@@ -160,11 +160,11 @@ export default function MentorsPage() {
           setMentors(mentorsResponse.data.data.mentors || [])
         }
       } else {
-        alert(response.data?.message || "Failed to update pause status")
+        showError(response.data?.message || "We couldn't update mentor status. Please try again.")
       }
     } catch (err) {
       console.error("Error toggling pause login:", err)
-      alert(err.response?.data?.message || err.message || "Failed to update pause status")
+      showError(err.response?.data?.message || err.message || "We couldn't update mentor status. Please try again.")
     } finally {
       setActionLoading(null)
     }
@@ -239,22 +239,22 @@ export default function MentorsPage() {
                   <td className="px-4 py-3 whitespace-normal break-words">{m.verify}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex gap-2">
-                      <button 
-                        onClick={() => handleApprove(m.id)} 
+                      <button
+                        onClick={() => handleApprove(m.id)}
                         disabled={actionLoading === m.id}
                         className="px-2 py-1 rounded bg-emerald-500/15 text-emerald-300 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {actionLoading === m.id ? '...' : 'Approve'}
                       </button>
-                      <button 
-                        onClick={() => handleReject(m.id)} 
+                      <button
+                        onClick={() => handleReject(m.id)}
                         disabled={actionLoading === m.id}
                         className="px-2 py-1 rounded bg-rose-500/15 text-rose-300 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {actionLoading === m.id ? '...' : 'Reject'}
                       </button>
-                      <button 
-                        onClick={() => handlePauseLogin(m.id, !m.paused)} 
+                      <button
+                        onClick={() => handlePauseLogin(m.id, !m.paused)}
                         disabled={actionLoading === m.id}
                         className="px-2 py-1 rounded bg-white/5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                       >

@@ -2,6 +2,9 @@
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { mentorsAPI } from "../../../utils/api"
+import MentorBadge from "./MentorBadge"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import NameAvatar from "../../../shared/components/NameAvatar"
 
 // Button component
 const Button = ({ children, className = "", style = {}, ...props }) => (
@@ -23,29 +26,37 @@ export default function Mentor() {
   const [mentors, setMentors] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalMentors, setTotalMentors] = useState(0)
+  const mentorsPerPage = 4
 
-  // Fetch mentors on mount
+  // Fetch mentors on mount and when page changes
   useEffect(() => {
-    loadMentors()
-  }, [])
+    loadMentors(currentPage)
+  }, [currentPage])
 
-  const loadMentors = async () => {
+  const loadMentors = async (page = 1) => {
     try {
       setLoading(true)
-      console.log('👥 Loading mentors...')
-      const response = await mentorsAPI.getAll({ limit: 4 })
+      console.log(`👥 Loading mentors for page ${page}...`)
+      const response = await mentorsAPI.getAll({ page, limit: mentorsPerPage })
       console.log('👥 Mentors response:', response.data)
 
       if (response.data && response.data.success) {
         const mentorData = response.data.data?.mentors || response.data.data || []
+        const pagination = response.data.data?.pagination
+
         setMentors(mentorData)
-        console.log('✅ Mentors loaded:', mentorData.length)
+        setTotalPages(pagination?.pages || 1)
+        setTotalMentors(pagination?.total || mentorData.length)
+        console.log('✅ Mentors loaded:', mentorData.length, 'Total:', pagination?.total)
       } else {
-        setError(response.data?.message || 'Failed to load mentors')
+        setError(response.data?.message || "We couldn't load mentors. Please try again.")
       }
     } catch (error) {
       console.error('Error loading mentors:', error)
-      setError('Failed to load mentors')
+      setError("We couldn't load mentors. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -54,9 +65,10 @@ export default function Mentor() {
   const handleSearch = async () => {
     try {
       setLoading(true)
+      setCurrentPage(1) // Reset to first page on new search
       console.log('🔍 Searching mentors:', { name: inputName, location: inputLocation })
 
-      const params = { limit: 4 }
+      const params = { page: 1, limit: mentorsPerPage }
       if (inputName.trim()) {
         params.search = inputName.trim()
       }
@@ -69,16 +81,27 @@ export default function Mentor() {
 
       if (response.data && response.data.success) {
         const mentorData = response.data.data?.mentors || response.data.data || []
+        const pagination = response.data.data?.pagination
+
         setMentors(mentorData)
+        setTotalPages(pagination?.pages || 1)
+        setTotalMentors(pagination?.total || mentorData.length)
         console.log('✅ Search results:', mentorData.length)
       } else {
-        setError(response.data?.message || 'Failed to search mentors')
+        setError(response.data?.message || "We couldn't find mentors matching your search. Please try again.")
       }
     } catch (error) {
       console.error('Error searching mentors:', error)
-      setError('Failed to search mentors')
+      setError("We couldn't search for mentors. Please try again.")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
@@ -95,7 +118,7 @@ export default function Mentor() {
           </span>
         </div>
         <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">From application stress to admission success</h2>
-        <p className="text-gray-600 text-lg">Every Scholarslee mentor has walked the same path you’re on. Now, they’re here to help you avoid mistakes, save time, and secure your place at leading universities.</p>
+        <p className="text-gray-600 text-lg">Every Scholarslee mentor has walked the same path you're on. Now, they're here to help you avoid mistakes, save time, and secure your place at leading universities.</p>
       </div>
 
       {/* Search Bar */}
@@ -116,6 +139,7 @@ export default function Mentor() {
             placeholder="Search by the name of the mentor"
             value={inputName}
             onChange={(e) => setInputName(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg md:rounded-r-none md:border-r-0 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
         </div>
@@ -136,6 +160,7 @@ export default function Mentor() {
             placeholder="Location"
             value={inputLocation}
             onChange={(e) => setInputLocation(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             className="w-full md:w-48 pl-10 pr-4 py-3 border border-gray-300 rounded-lg md:rounded-none md:border-l border-t md:border-t border-b md:border-b focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
         </div>
@@ -144,8 +169,15 @@ export default function Mentor() {
         </Button>
       </div>
 
+      {/* Results Count */}
+      {!loading && mentors.length > 0 && (
+        <div className="mb-4 text-gray-600">
+          Showing {((currentPage - 1) * mentorsPerPage) + 1} - {Math.min(currentPage * mentorsPerPage, totalMentors)} of {totalMentors} mentors
+        </div>
+      )}
+
       {/* Mentor Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 mb-8">
         {loading ? (
           <div className="col-span-2 text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
@@ -164,7 +196,7 @@ export default function Mentor() {
             const firstName = mentor.userId?.profile?.firstName || 'Unknown'
             const lastName = mentor.userId?.profile?.lastName || ''
             const fullName = `${firstName} ${lastName}`.trim()
-            const avatar = mentor.userId?.profile?.avatar || '/a.jpg'
+            const avatar = mentor.userId?.profile?.avatar
             const location = mentor.userId?.profile?.country || 'Unknown Location'
             const title = mentor.title || 'Mentor'
             const rating = mentor.rating || 0
@@ -174,10 +206,15 @@ export default function Mentor() {
               <div key={mentor._id} className="bg-white rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
                   <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-                    <img src={avatar} alt={fullName} className="w-full h-full object-cover" />
+                    <NameAvatar src={avatar} name={fullName} size="w-full h-full" textSize="text-3xl" className="rounded-lg" />
                   </div>
                   <div className="flex-1 text-center sm:text-left">
-                    <h3 className="text-xl font-bold text-gray-900 mb-1">{fullName}</h3>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                      <h3 className="text-xl font-bold text-gray-900">{fullName}</h3>
+                      <div className="flex justify-center sm:justify-start">
+                        <MentorBadge badge={mentor.badge} />
+                      </div>
+                    </div>
                     <p className="text-gray-600 mb-3">{title}</p>
                     <div className="flex items-center justify-center sm:justify-start gap-6 mb-4">
                       <div className="text-center">
@@ -201,12 +238,58 @@ export default function Mentor() {
         )}
       </div>
 
-      {/* See All Button */}
-      <div className="text-center">
-        <Button className="text-white px-8 py-3 font-semibold" style={{ backgroundColor: "#5D38DE" }}>
-          See all
-        </Button>
-      </div>
+      {/* Pagination Controls */}
+      {!loading && mentors.length > 0 && totalPages > 1 && (
+        <div className="flex justify-center items-center gap-4">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            aria-label="Previous page"
+          >
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
+          </button>
+
+          <div className="flex gap-2">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+              // Show first page, last page, current page, and pages around current
+              const showPage = page === 1 ||
+                page === totalPages ||
+                (page >= currentPage - 1 && page <= currentPage + 1)
+
+              if (!showPage && page === currentPage - 2) {
+                return <span key={page} className="px-3 py-2 text-gray-500">...</span>
+              }
+              if (!showPage && page === currentPage + 2) {
+                return <span key={page} className="px-3 py-2 text-gray-500">...</span>
+              }
+              if (!showPage) return null
+
+              return (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${currentPage === page
+                    ? 'bg-purple-600 text-white'
+                    : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
+                    }`}
+                >
+                  {page}
+                </button>
+              )
+            })}
+          </div>
+
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            aria-label="Next page"
+          >
+            <ChevronRight className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+      )}
     </section>
   )
 }

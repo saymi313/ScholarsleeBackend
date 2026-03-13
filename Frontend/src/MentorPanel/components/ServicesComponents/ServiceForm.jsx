@@ -64,7 +64,7 @@ const ServiceForm = ({ isEdit = false, service = null }) => {
       }, 1500);
     } catch (error) {
       console.error('Error saving service:', error);
-      setError(error.message || 'Failed to save service');
+      setError(error.message || "We couldn't save your service. Please check all fields and try again.");
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 import React from "react"
 import { Check, CheckCheck } from "lucide-react"
+import NameAvatar from "../../../shared/components/NameAvatar"
 
 export default function MessageBubble({ message }) {
   const isMe = message.sender === "me"
@@ -11,7 +12,7 @@ export default function MessageBubble({ message }) {
       <div className="max-w-[85%] md:max-w-md">
         {!isMe && (
           <div className="flex items-center gap-2 mb-2">
-            <img src={message.avatar || "/a.jpg"} alt="" className="w-6 h-6 rounded-full" />
+            <NameAvatar src={message.avatar} name={message.senderName || 'Mentor'} size="w-6 h-6" textSize="text-xs" />
             <span className="text-gray-500 text-xs">Mentor</span>
           </div>
         )}

@@ -14,7 +14,7 @@ const DeleteServiceModal = ({ isOpen, onClose, service, onSuccess }) => {
 
     try {
       const response = await servicesAPI.delete(service._id);
-      
+
       if (response.data && response.data.success) {
         console.log('✅ Delete successful');
         // Close modal immediately
@@ -23,12 +23,12 @@ const DeleteServiceModal = ({ isOpen, onClose, service, onSuccess }) => {
         onSuccess && onSuccess();
       } else {
         console.log('❌ Delete failed:', response.data);
-        setError(response.data?.message || 'Failed to delete service');
+        setError(response.data?.message || "We couldn't delete this service. Please try again.");
         setLoading(false); // Stop loading on error
       }
     } catch (error) {
       console.error('❌ Error deleting service:', error);
-      setError(error.message || 'Failed to delete service');
+      setError(error.message || "We couldn't delete this service. Please try again.");
       setLoading(false); // Stop loading on error
     }
   };
@@ -39,7 +39,7 @@ const DeleteServiceModal = ({ isOpen, onClose, service, onSuccess }) => {
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         {/* Backdrop */}
-        <div 
+        <div
           className="fixed inset-0 transition-opacity bg-black bg-opacity-75"
           onClick={onClose}
         />
@@ -69,22 +69,21 @@ const DeleteServiceModal = ({ isOpen, onClose, service, onSuccess }) => {
           <div className="p-6">
             <div className="mb-6">
               <p className="text-gray-300 mb-4">
-                Are you sure you want to delete <span className="font-semibold text-white">"{service.title}"</span>? 
+                Are you sure you want to delete <span className="font-semibold text-white">"{service.title}"</span>?
                 This action cannot be undone and will permanently remove the service from your portfolio.
               </p>
-              
+
               <div className="bg-[#2a2a2a] rounded-lg p-4 border border-[#3a3a3a]">
                 <h4 className="text-sm font-medium text-gray-300 mb-2">Service Details:</h4>
                 <div className="space-y-1 text-sm text-gray-400">
                   <p><span className="text-gray-300">Category:</span> {service.category}</p>
                   <p><span className="text-gray-300">Packages:</span> {service.packages?.length || 0} packages</p>
-                  <p><span className="text-gray-300">Status:</span> 
-                    <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
-                      service.status === 'approved' ? 'bg-green-600/20 text-green-400' :
-                      service.status === 'pending' ? 'bg-yellow-600/20 text-yellow-400' :
-                      service.status === 'rejected' ? 'bg-red-600/20 text-red-400' :
-                      'bg-gray-600/20 text-gray-400'
-                    }`}>
+                  <p><span className="text-gray-300">Status:</span>
+                    <span className={`ml-2 px-2 py-1 rounded-full text-xs ${service.status === 'approved' ? 'bg-green-600/20 text-green-400' :
+                        service.status === 'pending' ? 'bg-yellow-600/20 text-yellow-400' :
+                          service.status === 'rejected' ? 'bg-red-600/20 text-red-400' :
+                            'bg-gray-600/20 text-gray-400'
+                      }`}>
                       {service.status}
                     </span>
                   </p>

@@ -6,12 +6,11 @@ const Recommendations = ({ mentorData }) => {
   const [currentIndex, setCurrentIndex] = useState(0)
 
   const recommendations = mentorData?.recommendations || []
-  
+
   const testimonials = recommendations.length > 0 ? recommendations.map((rec, index) => ({
     id: index + 1,
     name: rec.fromName || 'Anonymous',
     title: '', // Not in backend model
-    image: '/u.jpeg', // Default avatar
     text: rec.text || '',
     rating: rec.rating || 5
   })) : [
@@ -19,7 +18,6 @@ const Recommendations = ({ mentorData }) => {
       id: 1,
       name: "No recommendations yet",
       title: "",
-      image: "/u.jpeg",
       text: "This mentor hasn't received any recommendations yet.",
       rating: 0
     }
@@ -51,7 +49,7 @@ const Recommendations = ({ mentorData }) => {
       </div>
 
       <div className="max-w-6xl mx-auto relative z-10">
-        
+
 
         {/* Testimonials Carousel */}
         <div className="relative flex items-center justify-center">
@@ -106,9 +104,8 @@ const Recommendations = ({ mentorData }) => {
             <button
               key={index}
               onClick={() => goToSlide(index)}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                index === currentIndex ? "w-6 bg-[#5D38DE]" : "w-2 bg-gray-300"
-              }`}
+              className={`h-2 rounded-full transition-all duration-300 ${index === currentIndex ? "w-6 bg-[#5D38DE]" : "w-2 bg-gray-300"
+                }`}
               aria-label={`Go to testimonial ${index + 1}`}
             />
           ))}

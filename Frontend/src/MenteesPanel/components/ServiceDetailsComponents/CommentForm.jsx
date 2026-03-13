@@ -42,24 +42,24 @@ export default function CommentForm({ service, onFeedbackSubmitted }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!isAuthenticated) {
-      setError('Please log in to leave feedback');
+      setError('Please log in to share your feedback.');
       return;
     }
 
     if (rating === 0) {
-      setError('Please select a rating');
+      setError('Please tap a star to rate this service.');
       return;
     }
 
     if (!comment.trim()) {
-      setError('Please enter a comment');
+      setError('Please write a few words about your experience.');
       return;
     }
 
     if (comment.trim().length > 1000) {
-      setError('Comment cannot exceed 1000 characters');
+      setError('Your comment is too long — please keep it under 1,000 characters.');
       return;
     }
 
@@ -78,7 +78,7 @@ export default function CommentForm({ service, onFeedbackSubmitted }) {
         setRating(0);
         setComment('');
         setHasExistingFeedback(true);
-        
+
         // Call callback to refresh feedbacks list
         if (onFeedbackSubmitted) {
           onFeedbackSubmitted();
@@ -89,11 +89,11 @@ export default function CommentForm({ service, onFeedbackSubmitted }) {
           setSuccess(false);
         }, 3000);
       } else {
-        setError(response.data?.message || 'Failed to submit feedback');
+        setError(response.data?.message || "We couldn't submit your feedback. Please try again.");
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      setError(error.message || 'Failed to submit feedback. Please try again.');
+      setError(error.message || "We couldn't submit your feedback. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -134,7 +134,7 @@ export default function CommentForm({ service, onFeedbackSubmitted }) {
         <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
           <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
           <p className="text-sm text-green-800">
-            You have already left feedback for this service. Only one feedback per service is allowed.
+            Thanks! You've already shared your feedback for this service.
           </p>
         </div>
       </section>
@@ -160,19 +160,17 @@ export default function CommentForm({ service, onFeedbackSubmitted }) {
                 type="button"
                 onClick={() => setRating(star)}
                 onMouseEnter={() => setHoveredRating(star)}
-                className={`transition-all duration-200 transform hover:scale-110 ${
-                  star <= (hoveredRating || rating)
-                    ? 'text-yellow-400'
-                    : 'text-gray-300'
-                }`}
+                className={`transition-all duration-200 transform hover:scale-110 ${star <= (hoveredRating || rating)
+                  ? 'text-yellow-400'
+                  : 'text-gray-300'
+                  }`}
                 aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
               >
                 <Star
-                  className={`w-8 h-8 md:w-10 md:h-10 ${
-                    star <= (hoveredRating || rating)
-                      ? 'fill-current'
-                      : 'stroke-current fill-none'
-                  }`}
+                  className={`w-8 h-8 md:w-10 md:h-10 ${star <= (hoveredRating || rating)
+                    ? 'fill-current'
+                    : 'stroke-current fill-none'
+                    }`}
                 />
               </button>
             ))}

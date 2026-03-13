@@ -49,21 +49,21 @@ const MeetingSchedulingModal = ({ isOpen, onClose, onSchedule }) => {
 
   const validateForm = () => {
     const newErrors = {}
-    
+
     if (!formData.menteeId) {
-      newErrors.menteeId = "Mentee selection is required"
+      newErrors.menteeId = "Please select a mentee"
     }
-    
+
     if (!formData.topic.trim()) {
-      newErrors.topic = "Topic is required"
+      newErrors.topic = "Please enter a meeting topic"
     }
-    
+
     if (!formData.date) {
-      newErrors.date = "Date is required"
+      newErrors.date = "Please choose a date"
     }
-    
+
     if (!formData.time) {
-      newErrors.time = "Time is required"
+      newErrors.time = "Please choose a time"
     }
 
     setErrors(newErrors)
@@ -72,7 +72,7 @@ const MeetingSchedulingModal = ({ isOpen, onClose, onSchedule }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
+
     if (validateForm()) {
       onSchedule(formData)
     }
@@ -128,9 +128,8 @@ const MeetingSchedulingModal = ({ isOpen, onClose, onSchedule }) => {
             <select
               value={formData.menteeId}
               onChange={(e) => handleInputChange('menteeId', e.target.value)}
-              className={`w-full bg-[#242424] text-white rounded-lg p-3 border focus:outline-none ${
-                errors.menteeId ? 'border-red-500' : 'border-[#3a3a3a] focus:border-[#5D38DE]'
-              }`}
+              className={`w-full bg-[#242424] text-white rounded-lg p-3 border focus:outline-none ${errors.menteeId ? 'border-red-500' : 'border-[#3a3a3a] focus:border-[#5D38DE]'
+                }`}
               disabled={loadingMentees}
             >
               <option value="">{loadingMentees ? 'Loading mentees...' : 'Select a mentee'}</option>
@@ -139,7 +138,7 @@ const MeetingSchedulingModal = ({ isOpen, onClose, onSchedule }) => {
                 const lastName = mentee.profile?.lastName || mentee.lastName || '';
                 const fullName = `${firstName} ${lastName}`.trim() || 'No Name';
                 const email = mentee.email || 'No Email';
-                
+
                 return (
                   <option key={mentee._id} value={mentee._id}>
                     {fullName} ({email})
@@ -151,7 +150,7 @@ const MeetingSchedulingModal = ({ isOpen, onClose, onSchedule }) => {
               <p className="text-red-500 text-sm mt-1">{errors.menteeId}</p>
             )}
             {!loadingMentees && mentees.length === 0 && (
-              <p className="text-yellow-500 text-sm mt-1">No mentees found in the system.</p>
+              <p className="text-yellow-500 text-sm mt-1">No followers or service buyers found yet.</p>
             )}
           </div>
 
@@ -165,9 +164,8 @@ const MeetingSchedulingModal = ({ isOpen, onClose, onSchedule }) => {
               type="text"
               value={formData.topic}
               onChange={(e) => handleInputChange('topic', e.target.value)}
-              className={`w-full bg-[#242424] text-white rounded-lg p-3 border focus:outline-none ${
-                errors.topic ? 'border-red-500' : 'border-[#3a3a3a] focus:border-[#5D38DE]'
-              }`}
+              className={`w-full bg-[#242424] text-white rounded-lg p-3 border focus:outline-none ${errors.topic ? 'border-red-500' : 'border-[#3a3a3a] focus:border-[#5D38DE]'
+                }`}
               placeholder="e.g., Career Guidance, Technical Interview Prep"
             />
             {errors.topic && (
@@ -186,9 +184,8 @@ const MeetingSchedulingModal = ({ isOpen, onClose, onSchedule }) => {
                 type="date"
                 value={formData.date}
                 onChange={(e) => handleInputChange('date', e.target.value)}
-                className={`w-full bg-[#242424] text-white rounded-lg p-3 border focus:outline-none ${
-                  errors.date ? 'border-red-500' : 'border-[#3a3a3a] focus:border-[#5D38DE]'
-                }`}
+                className={`w-full bg-[#242424] text-white rounded-lg p-3 border focus:outline-none ${errors.date ? 'border-red-500' : 'border-[#3a3a3a] focus:border-[#5D38DE]'
+                  }`}
                 min={new Date().toISOString().split('T')[0]}
               />
               {errors.date && (
@@ -205,9 +202,8 @@ const MeetingSchedulingModal = ({ isOpen, onClose, onSchedule }) => {
                 type="time"
                 value={formData.time}
                 onChange={(e) => handleInputChange('time', e.target.value)}
-                className={`w-full bg-[#242424] text-white rounded-lg p-3 border focus:outline-none ${
-                  errors.time ? 'border-red-500' : 'border-[#3a3a3a] focus:border-[#5D38DE]'
-                }`}
+                className={`w-full bg-[#242424] text-white rounded-lg p-3 border focus:outline-none ${errors.time ? 'border-red-500' : 'border-[#3a3a3a] focus:border-[#5D38DE]'
+                  }`}
               />
               {errors.time && (
                 <p className="text-red-500 text-sm mt-1">{errors.time}</p>

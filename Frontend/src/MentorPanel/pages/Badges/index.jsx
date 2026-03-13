@@ -20,10 +20,10 @@ const Badges = () => {
       setLoading(true)
       setError(null)
       const response = await badgesAPI.getAllBadges()
-      
+
       if (response.data && response.data.success) {
         const badgesData = response.data.data?.badges || []
-        
+
         // Map badges to the format expected by BadgeGrid
         const mappedBadges = badgesData.map((badge, index) => ({
           id: index + 1,
@@ -34,14 +34,14 @@ const Badges = () => {
           description: badge.description,
           threshold: badge.threshold
         }))
-        
+
         setBadges(mappedBadges)
       } else {
-        setError(response.data?.message || 'Failed to load badges')
+        setError(response.data?.message || "We couldn't load your badges. Please refresh the page.")
       }
     } catch (err) {
       console.error('Error loading badges:', err)
-      setError(err.message || 'Failed to load badges')
+      setError(err.message || "We couldn't load your badges. Please refresh the page.")
     } finally {
       setLoading(false)
     }
@@ -64,7 +64,7 @@ const Badges = () => {
       <div className="flex-1 flex flex-col transition-all duration-300 h-screen overflow-hidden">
         <TopBar />
 
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto h-full">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto h-full pb-20">
           <BadgesHeader />
 
           <div className="flex flex-col lg:flex-row gap-6">
@@ -93,9 +93,9 @@ const Badges = () => {
               )}
             </div>
 
-            {/* Right Sidebar - Fixed Position */}
+            {/* Right Sidebar - Sticky */}
             <div className="lg:w-80">
-              <div className="lg:fixed lg:top-24 lg:right-8 lg:w-80 lg:z-10">
+              <div className="lg:sticky lg:top-6">
                 <CurrentBadge />
               </div>
             </div>

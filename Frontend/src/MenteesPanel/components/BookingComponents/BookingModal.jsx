@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, DollarSign, User, MessageSquare } from 'lucide-react';
+import { X, Calendar, Clock, DollarSign, User, MessageSquare, Info, Globe } from 'lucide-react';
 import { paymentAPI } from '../../../utils/api';
 
 const getPackageDurationInMinutes = (value, fallback = 60) => {
@@ -50,20 +50,20 @@ const BookingModal = ({ isOpen, onClose, service, selectedPackage, onSuccess }) 
     try {
       const normalizedDuration = Number(formData.duration);
       if (!normalizedDuration || Number.isNaN(normalizedDuration) || normalizedDuration <= 0) {
-        setError('Please select a valid duration.');
+        setError("Please choose how long you'd like the session to be.");
         setLoading(false);
         return;
       }
 
       if (!formData.scheduledDate) {
-        setError('Please select a scheduled date and time.');
+        setError('Please pick a date and time for your session.');
         setLoading(false);
         return;
       }
 
       const packageToBook = selectedPackage || service.packages?.[0];
       if (!packageToBook?._id) {
-        setError('Selected service package is invalid.');
+        setError('Something went wrong with the selected package. Please try selecting it again.');
         setLoading(false);
         return;
       }
@@ -82,11 +82,11 @@ const BookingModal = ({ isOpen, onClose, service, selectedPackage, onSuccess }) 
       if (checkoutUrl) {
         window.location.href = checkoutUrl;
       } else {
-        setError(response.data?.message || 'Failed to initiate payment. Please try again.');
+        setError(response.data?.message || "We couldn't start your payment. Please try again or contact support if this keeps happening.");
       }
     } catch (error) {
       console.error('Error creating checkout session:', error);
-      setError(error.message || 'Failed to initiate payment. Please try again.');
+      setError(error.message || "We couldn't start your payment. Please try again or contact support if this keeps happening.");
     } finally {
       setLoading(false);
     }
@@ -109,7 +109,7 @@ const BookingModal = ({ isOpen, onClose, service, selectedPackage, onSuccess }) 
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         {/* Backdrop */}
-        <div 
+        <div
           className="fixed inset-0 transition-opacity bg-black bg-opacity-75"
           onClick={onClose}
         />
@@ -146,22 +146,67 @@ const BookingModal = ({ isOpen, onClose, service, selectedPackage, onSuccess }) 
                   <span className="text-gray-600">Mentor:</span>
                   <span className="font-medium">{service.mentorId?.profile?.firstName} {service.mentorId?.profile?.lastName}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-600">Price:</span>
-                  <span className="font-medium">${totalAmount}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-600">Duration:</span>
-                  <span className="font-medium">{formData.duration} minutes</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-600">Category:</span>
-                  <span className="font-medium">{service.category}</span>
+                <div className="flex items-center justify-between col-span-2 p-3 bg-white border border-gray-200 rounded-xl mt-2">
+                  <div className="space-y-1">
+                    <p className="text-xs text-gray-500 font-medium">Price Breakdown</p>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-gray-600">Base: ${totalAmount}</span>
+                      <span className="text-gray-400">+</span>
+                      <span className="text-gray-600">Fee: ${Math.max(0, (Math.ceil(((totalAmount + 0.30) / (1 - 0.029)) * 100) / 100) - totalAmount).toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total to Pay</p>
+                    <p className="text-xl font-black text-[#5D38DE]">
+                      ${(Math.ceil(((totalAmount + 0.30) / (1 - 0.029)) * 100) / 100).toFixed(2)}
+                    </p>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            {/* Availability Section */}
+            <div className="mb-6 p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-[#5D38DE]" />
+                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Mentor Availability</h4>
+              </div>
+
+              {service.mentorAvailability && (service.mentorAvailability.daysAvailable?.length > 0 || service.mentorAvailability.workingHours) ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4 text-sm mt-3">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="text-gray-500">TZ:</span>
+                    <span className="text-gray-700 font-medium">{service.mentorAvailability.timezone || 'UTC'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="text-gray-500">Hours:</span>
+                    <span className="text-gray-700 font-medium">{service.mentorAvailability.workingHours || 'Not specified'}</span>
+                  </div>
+                  <div className="sm:col-span-2 flex items-start gap-2 mt-1">
+                    <Calendar className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
+                    <div className="flex flex-wrap gap-1.5">
+                      {service.mentorAvailability.daysAvailable?.length > 0 ? (
+                        service.mentorAvailability.daysAvailable.map(day => (
+                          <span key={day} className="px-2 py-0.5 bg-white text-[#5D38DE] text-[10px] font-bold uppercase rounded border border-indigo-100">
+                            {day.substring(0, 3)}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-500 italic">No specific days set</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 mt-1 py-1">
+                  <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <p className="text-gray-600 text-sm leading-tight">
+                    <span className="font-semibold text-indigo-700">Flexible timings:</span> Your mentor will coordinate a suitable time with you after booking.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Booking Form */}
@@ -244,7 +289,7 @@ const BookingModal = ({ isOpen, onClose, service, selectedPackage, onSuccess }) 
                 ) : (
                   <>
                     <Calendar className="w-4 h-4" />
-                    Book Now - ${totalAmount}
+                    Book Now - ${(Math.ceil(((totalAmount + 0.30) / (1 - 0.029)) * 100) / 100).toFixed(2)}
                   </>
                 )}
               </button>

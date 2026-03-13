@@ -59,11 +59,11 @@ export default function ServiceDetailsPage() {
         }
       } else {
         console.log('❌ Service not found:', response?.data?.message)
-        setError(response?.data?.message || 'Service not found')
+        setError(response?.data?.message || "We couldn't find this service. It may have been removed.")
       }
     } catch (error) {
       console.error('❌ Error loading service:', error)
-      setError('Failed to load service')
+      setError("We couldn't load this service. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -109,7 +109,7 @@ export default function ServiceDetailsPage() {
         <Header />
         <main className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-8 md:py-12">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Service Not Found</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Oops! Service not available</h1>
             <p className="text-gray-600 mb-6">{error}</p>
             <button
               onClick={() => navigate('/mentees/services')}
@@ -129,8 +129,8 @@ export default function ServiceDetailsPage() {
         <Header />
         <main className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-8 md:py-12">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Service Not Found</h1>
-            <p className="text-gray-600 mb-6">The service you're looking for doesn't exist.</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Oops! Service not available</h1>
+            <p className="text-gray-600 mb-6">The service you're looking for may have been removed or is no longer available.</p>
             <button
               onClick={() => navigate('/mentees/services')}
               className="px-4 py-2 bg-[#5D38DE] text-white rounded hover:bg-[#4d2ec4] transition-colors"

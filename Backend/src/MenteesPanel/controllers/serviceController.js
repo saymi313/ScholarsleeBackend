@@ -108,22 +108,34 @@ const getAllMentorServices = async (req, res) => {
       sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
     }
 
+    // Optimize query for landing page (small limits)
+    const isSmallLimit = limit <= 10;
+
     const services = await MentorService.find(query)
       .populate('mentorId', 'profile firstName lastName')
-      .populate('mentorProfile', 'slug')
+      .populate('mentorProfile', 'slug availability')
+      .select('title description category packages rating totalReviews images slug mentorId mentorProfile')
+      .lean() // Convert to plain JS objects for better performance
       .sort(sortOptions)
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    const total = await MentorService.countDocuments(query);
+    // Skip count query for small limits (landing page optimization)
+    let total = 0;
+    let pagination = null;
 
-    return sendSuccessResponse(res, 'MentorServices retrieved successfully', {
-      services,
-      pagination: {
+    if (!isSmallLimit) {
+      total = await MentorService.countDocuments(query);
+      pagination = {
         current: parseInt(page),
         pages: Math.ceil(total / limit),
         total
-      }
+      };
+    }
+
+    return sendSuccessResponse(res, 'MentorServices retrieved successfully', {
+      services,
+      ...(pagination && { pagination })
     });
   } catch (error) {
     return sendErrorResponse(res, 'Failed to retrieve services', 500);
@@ -152,13 +164,14 @@ const getMentorServiceById = async (req, res) => {
       isActive: true
     });
 
-    // Get MentorProfile ID for navigation
-    const mentorProfile = await MentorProfile.findOne({ userId: service.mentorId._id }).select('_id');
+    // Get MentorProfile for navigation and availability
+    const mentorProfile = await MentorProfile.findOne({ userId: service.mentorId._id }).select('_id availability');
 
-    // Convert service to object and add feedback count and mentorProfileId
+    // Convert service to object and add feedback count, mentorProfileId, and availability
     const serviceObject = service.toObject();
     serviceObject.feedbackCount = feedbackCount;
     serviceObject.mentorProfileId = mentorProfile ? mentorProfile._id : null;
+    serviceObject.mentorAvailability = mentorProfile ? mentorProfile.availability : null;
 
     return sendSuccessResponse(res, 'MentorService retrieved successfully', {
       service: serviceObject
@@ -240,7 +253,9 @@ const searchMentorServices = async (req, res) => {
 
     const services = await MentorService.find(searchQuery)
       .populate('mentorId', 'profile firstName lastName')
-      .populate('mentorProfile', 'slug') // Get slug
+      .populate('mentorProfile', 'slug availability')
+      .select('title description category packages rating totalReviews images slug mentorId mentorProfile tags')
+      .lean() // Convert to plain JS objects for better performance
       .sort(sortOptions)
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -293,6 +308,8 @@ const getMentorServicesByCategory = async (req, res) => {
 
     const services = await MentorService.find(query)
       .populate('mentorId', 'profile firstName lastName')
+      .select('title description category packages rating totalReviews images slug mentorId')
+      .lean()
       .sort(sortOptions)
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -327,6 +344,8 @@ const getMentorServicesByMentor = async (req, res) => {
 
     const services = await MentorService.find(query)
       .populate('mentorId', 'profile firstName lastName')
+      .select('title description category packages rating totalReviews images slug mentorId')
+      .lean()
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -372,7 +391,9 @@ const getFeaturedMentorServices = async (req, res) => {
       rating: { $gte: 4.0 }
     })
       .populate('mentorId', 'profile firstName lastName')
-      .populate('mentorProfile', 'slug')
+      .populate('mentorProfile', 'slug availability')
+      .select('title description category packages rating totalReviews images slug mentorId mentorProfile')
+      .lean()
       .sort({ rating: -1, totalReviews: -1 })
       .limit(parseInt(limit));
 
@@ -392,7 +413,9 @@ const getPopularMentorServices = async (req, res) => {
       isActive: true
     })
       .populate('mentorId', 'profile firstName lastName')
-      .populate('mentorProfile', 'slug')
+      .populate('mentorProfile', 'slug availability')
+      .select('title description category packages rating totalReviews images slug mentorId mentorProfile')
+      .lean()
       .sort({ totalReviews: -1, rating: -1 })
       .limit(parseInt(limit));
 
@@ -439,13 +462,14 @@ const getServiceByMentorAndSlug = async (req, res) => {
       isActive: true
     });
 
-    // Get MentorProfile ID for navigation
-    const mentorProfile = await MentorProfile.findOne({ userId: service.mentorId._id }).select('_id slug');
+    // Get MentorProfile for navigation and availability
+    const mentorProfile = await MentorProfile.findOne({ userId: service.mentorId._id }).select('_id slug availability');
 
     const serviceObject = service.toObject();
     serviceObject.feedbackCount = feedbackCount;
     serviceObject.mentorProfileId = mentorProfile ? mentorProfile._id : null;
     serviceObject.mentorSlug = mentorProfile ? mentorProfile.slug : null;
+    serviceObject.mentorAvailability = mentorProfile ? mentorProfile.availability : null;
 
     return sendSuccessResponse(res, 'Service retrieved successfully', {
       service: serviceObject

@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react"
 import DataTable from "../../components/DataTable"
 import { adminSessionsAPI } from "../../../utils/api"
+import { useToast } from "../../../context/ToastContext"
 import { Loader2, X, Eye, Calendar, Clock, DollarSign, CreditCard, User, Mail, Link as LinkIcon, FileText } from "lucide-react"
 
 export default function SessionsPage() {
+  const { showError } = useToast()
   const [status, setStatus] = useState("all")
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -26,7 +28,7 @@ export default function SessionsPage() {
       header: "Actions",
       render: (value, row) => (
         <div className="flex gap-2">
-          <button 
+          <button
             onClick={() => handleViewSession(row.id)}
             className="px-2 py-1 rounded bg-[#5D38DE]/20 hover:bg-[#5D38DE]/30 text-[#5D38DE] text-xs flex items-center gap-1"
           >
@@ -46,11 +48,11 @@ export default function SessionsPage() {
         setSessionDetails(response.data.data)
         setSelectedSession(sessionId)
       } else {
-        alert(response.data?.message || "Failed to load session details")
+        showError(response.data?.message || "We couldn't load session details. Please try again.")
       }
     } catch (err) {
       console.error("Error fetching session details:", err)
-      alert(err.response?.data?.message || err.message || "Failed to load session details")
+      showError(err.response?.data?.message || err.message || "We couldn't load session details. Please try again.")
     } finally {
       setDetailsLoading(false)
     }
@@ -62,17 +64,17 @@ export default function SessionsPage() {
       try {
         setLoading(true)
         setError("")
-        
+
         const response = await adminSessionsAPI.getAllSessions({ status })
-        
+
         if (response.data?.success) {
           setSessions(response.data.data.sessions || [])
         } else {
-          setError(response.data?.message || "Failed to load sessions")
+          setError(response.data?.message || "We couldn't load sessions. Please try again.")
         }
       } catch (err) {
         console.error("Error fetching sessions:", err)
-        setError(err.response?.data?.message || err.message || "Failed to load sessions")
+        setError(err.response?.data?.message || err.message || "We couldn't load sessions. Please try again.")
       } finally {
         setLoading(false)
       }
@@ -122,8 +124,8 @@ export default function SessionsPage() {
           <div className="relative z-10 w-full max-w-3xl rounded-2xl border border-white/20 bg-[#161619] shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-[#161619] border-b border-white/10 px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-bold text-white">Session Details</h3>
-              <button 
-                onClick={() => { setSelectedSession(null); setSessionDetails(null) }} 
+              <button
+                onClick={() => { setSelectedSession(null); setSessionDetails(null) }}
                 className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
               >
                 <X className="w-5 h-5 text-white/80" />
@@ -143,12 +145,11 @@ export default function SessionsPage() {
                   </div>
                   <div className="bg-white/5 rounded-lg p-4">
                     <p className="text-xs text-white/50 mb-1">Status</p>
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      sessionDetails.meeting.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400' :
+                    <span className={`px-2 py-1 rounded text-xs ${sessionDetails.meeting.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400' :
                       sessionDetails.meeting.status === 'cancelled' ? 'bg-rose-500/15 text-rose-400' :
-                      sessionDetails.meeting.status === 'in-progress' ? 'bg-blue-500/15 text-blue-400' :
-                      'bg-yellow-500/15 text-yellow-400'
-                    }`}>
+                        sessionDetails.meeting.status === 'in-progress' ? 'bg-blue-500/15 text-blue-400' :
+                          'bg-yellow-500/15 text-yellow-400'
+                      }`}>
                       {sessionDetails.meeting.status}
                     </span>
                   </div>
@@ -168,9 +169,9 @@ export default function SessionsPage() {
                   {sessionDetails.meeting.meetingLink && (
                     <div className="bg-white/5 rounded-lg p-4 col-span-2">
                       <p className="text-xs text-white/50 mb-1">Meeting Link</p>
-                      <a 
-                        href={sessionDetails.meeting.meetingLink} 
-                        target="_blank" 
+                      <a
+                        href={sessionDetails.meeting.meetingLink}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm font-medium text-[#5D38DE] hover:underline flex items-center gap-1"
                       >
@@ -230,23 +231,21 @@ export default function SessionsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white/5 rounded-lg p-4">
                       <p className="text-xs text-white/50 mb-1">Booking Status</p>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        sessionDetails.booking.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400' :
+                      <span className={`px-2 py-1 rounded text-xs ${sessionDetails.booking.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400' :
                         sessionDetails.booking.status === 'cancelled' ? 'bg-rose-500/15 text-rose-400' :
-                        sessionDetails.booking.status === 'confirmed' ? 'bg-blue-500/15 text-blue-400' :
-                        'bg-yellow-500/15 text-yellow-400'
-                      }`}>
+                          sessionDetails.booking.status === 'confirmed' ? 'bg-blue-500/15 text-blue-400' :
+                            'bg-yellow-500/15 text-yellow-400'
+                        }`}>
                         {sessionDetails.booking.status}
                       </span>
                     </div>
                     <div className="bg-white/5 rounded-lg p-4">
                       <p className="text-xs text-white/50 mb-1">Payment Status</p>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        sessionDetails.booking.paymentStatus === 'paid' ? 'bg-emerald-500/15 text-emerald-400' :
+                      <span className={`px-2 py-1 rounded text-xs ${sessionDetails.booking.paymentStatus === 'paid' ? 'bg-emerald-500/15 text-emerald-400' :
                         sessionDetails.booking.paymentStatus === 'refunded' ? 'bg-blue-500/15 text-blue-400' :
-                        sessionDetails.booking.paymentStatus === 'failed' ? 'bg-rose-500/15 text-rose-400' :
-                        'bg-yellow-500/15 text-yellow-400'
-                      }`}>
+                          sessionDetails.booking.paymentStatus === 'failed' ? 'bg-rose-500/15 text-rose-400' :
+                            'bg-yellow-500/15 text-yellow-400'
+                        }`}>
                         {sessionDetails.booking.paymentStatus}
                       </span>
                     </div>

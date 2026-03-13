@@ -148,6 +148,41 @@ const createMeeting = async (req, res) => {
     booking.meetingId = meetingId;
     await booking.save();
 
+    // Send email notification to mentee
+    try {
+      const emailService = require('../../shared/services/emailService');
+      const populatedBooking = await Booking.findById(booking._id)
+        .populate('menteeId', 'profile email')
+        .populate('mentorId', 'profile');
+
+      if (populatedBooking && populatedBooking.menteeId && populatedBooking.menteeId.email) {
+        const menteeName = `${populatedBooking.menteeId.profile.firstName} ${populatedBooking.menteeId.profile.lastName}`;
+        const mentorName = `${populatedBooking.mentorId.profile.firstName} ${populatedBooking.mentorId.profile.lastName}`;
+        const meetingDateFormatted = meeting.scheduledDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        await emailService.sendMeetingScheduledEmail(
+          populatedBooking.menteeId.email,
+          menteeName,
+          mentorName,
+          meeting.title,
+          meetingDateFormatted,
+          meetingLink,
+          meeting.duration
+        );
+        console.log('✅ Meeting scheduled email sent to mentee');
+      }
+    } catch (emailError) {
+      console.error('⚠️ Failed to send meeting scheduled email (continuing):', emailError.message);
+      // Don't fail the request if email fails
+    }
+
     // Create notification for mentee with meeting link
     const formattedDate = meeting.scheduledDate.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -171,8 +206,8 @@ const createMeeting = async (req, res) => {
         duration: meeting.duration
       },
       priority: 'high',
-          actionUrl: '/mentees/bookings', // Redirect to bookings/meetings page
-          actionText: 'View Meeting'
+      actionUrl: '/mentees/bookings', // Redirect to bookings/meetings page
+      actionText: 'View Meeting'
     });
 
     // Emit notification via socket to mentee if online
@@ -395,8 +430,8 @@ const deleteMeeting = async (req, res) => {
           getGoogleOAuthCredentials,
         } = require('../../shared/utils/helpers/googleMeetCredentialStore');
         const googleMeetService = new GoogleMeetService();
-        
-        const credentials = getGoogleOAuthCredentials();
+
+        const credentials = await getGoogleOAuthCredentials(mentorId);
         if (credentials && credentials.clientId && credentials.clientSecret) {
           const initResult = googleMeetService.initializeClient(credentials);
           if (initResult.success && initResult.calendarReady) {
@@ -541,12 +576,34 @@ const getMeetingsByDate = async (req, res) => {
 };
 
 // Get mentees for mentor (for dropdown selection)
+// Returns only the mentor's followers + mentees who bought their services, deduplicated
 const getMentorMentees = async (req, res) => {
   try {
-    // Fetch all active mentees from the system
     const User = require('../../shared/models/User');
-    const mentees = await User.find({ 
-      role: 'mentee',
+    const MentorProfile = require('../models/MentorProfile');
+    const Booking = require('../../shared/models/Booking');
+
+    // 1. Get follower IDs from MentorProfile
+    const mentorProfile = await MentorProfile.findOne({ userId: req.user.id }).select('followers');
+    const followerIds = mentorProfile?.followers || [];
+
+    // 2. Get buyer IDs from Bookings (distinct menteeId for this mentor)
+    const buyerIds = await Booking.find({ mentorId: req.user.id })
+      .distinct('menteeId');
+
+    // 3. Merge & deduplicate
+    const allIds = [...new Set([
+      ...followerIds.map(id => id.toString()),
+      ...buyerIds.map(id => id.toString())
+    ])];
+
+    if (allIds.length === 0) {
+      return sendSuccessResponse(res, 'Mentees retrieved successfully', { mentees: [] });
+    }
+
+    // 4. Fetch user profiles for the unique IDs
+    const mentees = await User.find({
+      _id: { $in: allIds },
       isActive: true
     })
       .select('profile email')

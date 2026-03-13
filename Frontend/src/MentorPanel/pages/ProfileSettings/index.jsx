@@ -8,8 +8,9 @@ import TabNavigation from "../../components/ProfileSettingsComponents/TabNavigat
 import BackgroundTab from "../../components/ProfileSettingsComponents/BackgroundTab"
 import RecommendationsTab from "../../components/ProfileSettingsComponents/RecommendationsTab"
 import ConnectionsTab from "../../components/ProfileSettingsComponents/ConnectionsTab"
-import ServicesTab from "../../components/ProfileSettingsComponents/ServicesTab"
+
 import SuccessStoryTab from "../../components/ProfileSettingsComponents/SuccessStoryTab"
+import WalletTab from "../../components/ProfileSettingsComponents/WalletTab"
 
 const ProfileSettings = () => {
   const [activeTab, setActiveTab] = useState("background")
@@ -22,10 +23,11 @@ const ProfileSettings = () => {
         return <RecommendationsTab />
       case "connections":
         return <ConnectionsTab />
-      case "services":
-        return <ServicesTab />
+
       case "success-story":
         return <SuccessStoryTab />
+      case "wallet":
+        return <WalletTab />
       default:
         return <BackgroundTab />
     }

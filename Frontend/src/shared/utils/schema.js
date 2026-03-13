@@ -96,7 +96,7 @@ export const generateMentorSchema = (mentor) => ({
         "@type": "Organization",
         "name": "Scholarslee"
     },
-    "url": `https://scholarslee.com/mentees/mentor-details/${mentor._id || mentor.id}`
+    "url": `https://scholarslee.com/mentees/mentor-details/${mentor.slug || mentor._id || mentor.id}`
 });
 
 export const generateServiceSchema = (service, mentor) => ({

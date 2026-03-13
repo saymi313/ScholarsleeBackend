@@ -33,11 +33,11 @@ export default function FeedbackList({ serviceId, refreshTrigger }) {
         setFeedbacks(response.data.data?.feedbacks || []);
         setPagination(response.data.data?.pagination || pagination);
       } else {
-        setError(response.data?.message || 'Please login or register to view feedbacks');
+        setError(response.data?.message || 'Please log in or create an account to see reviews.');
       }
     } catch (error) {
       console.error('Error loading feedbacks:', error);
-      setError('Please login or register your account to view feedbacks.');
+      setError('Please log in or create an account to see reviews.');
     } finally {
       setLoading(false);
     }
@@ -182,8 +182,8 @@ export default function FeedbackList({ serviceId, refreshTrigger }) {
                                 <Star
                                   key={star}
                                   className={`w-4 h-4 ${star <= feedback.rating
-                                      ? 'text-yellow-400 fill-current'
-                                      : 'text-gray-300'
+                                    ? 'text-yellow-400 fill-current'
+                                    : 'text-gray-300'
                                     }`}
                                 />
                               ))}

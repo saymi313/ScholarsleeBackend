@@ -82,7 +82,7 @@ const ImageUpload = ({
             }
         } catch (err) {
             console.error('Upload error:', err);
-            setError(err.response?.data?.message || 'Failed to upload file(s)');
+            setError(err.response?.data?.message || "We couldn't upload your file. Please try again with a smaller file.");
         } finally {
             setUploading(false);
         }

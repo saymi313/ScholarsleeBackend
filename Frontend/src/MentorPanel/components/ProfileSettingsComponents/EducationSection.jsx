@@ -142,7 +142,7 @@ const EducationSection = forwardRef((props, ref) => {
         }
       } catch (error) {
         console.error('Update error:', error)
-        setMessage("✗ Failed to save")
+        setMessage("We couldn't save your education. Please try again.")
         setTimeout(() => setMessage(""), 3000)
       }
     }, 1000)
@@ -163,7 +163,7 @@ const EducationSection = forwardRef((props, ref) => {
       setMessage("✓ Education removed")
       setTimeout(() => setMessage(""), 3000)
     } catch (error) {
-      setMessage("✗ Failed to remove")
+      setMessage("We couldn't remove this entry. Please try again.")
       console.error(error)
     } finally {
       setLoading(false)

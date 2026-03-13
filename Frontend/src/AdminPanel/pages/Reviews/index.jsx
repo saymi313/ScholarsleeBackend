@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react"
 import DataTable from "../../components/DataTable"
 import { adminReviewsAPI } from "../../../utils/api"
+import { useToast } from "../../../context/ToastContext"
 import { Loader2, X, Star, Eye, EyeOff, Trash2, MessageSquare, Send } from "lucide-react"
 
 export default function ReviewsPage() {
+  const { showError, showWarning, showSuccess } = useToast()
   const [minRating, setMinRating] = useState("all")
   const [selected, setSelected] = useState(null)
   const [contactResponse, setContactResponse] = useState("")
@@ -33,11 +35,11 @@ export default function ReviewsPage() {
       if (response.data?.success) {
         setFeedbacks(response.data.data.feedbacks || [])
       } else {
-        setError(response.data?.message || "Failed to load feedbacks")
+        setError(response.data?.message || "We couldn't load feedback. Please try again.")
       }
     } catch (err) {
       console.error("Error fetching feedbacks:", err)
-      setError(err.message || "Failed to load feedbacks")
+      setError(err.message || "We couldn't load feedback. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -62,7 +64,7 @@ export default function ReviewsPage() {
       const newVisibility = !feedback.isVisible
       await adminReviewsAPI.updateVisibility(feedback.id, newVisibility)
       // Update local state
-      setFeedbacks(feedbacks.map(f => 
+      setFeedbacks(feedbacks.map(f =>
         f.id === feedback.id ? { ...f, isVisible: newVisibility, status: newVisibility ? 'visible' : 'hidden' } : f
       ))
       if (selected && selected.id === feedback.id) {
@@ -70,13 +72,13 @@ export default function ReviewsPage() {
       }
     } catch (err) {
       console.error("Error updating visibility:", err)
-      alert(err.response?.data?.message || "Failed to update visibility")
+      showError(err.response?.data?.message || "We couldn't update visibility. Please try again.")
     }
   }
 
   const handleDeleteFeedback = async (feedbackId) => {
     if (!confirm("Are you sure you want to delete this feedback?")) return
-    
+
     try {
       await adminReviewsAPI.deleteFeedback(feedbackId)
       setFeedbacks(feedbacks.filter(f => f.id !== feedbackId))
@@ -85,7 +87,7 @@ export default function ReviewsPage() {
       }
     } catch (err) {
       console.error("Error deleting feedback:", err)
-      alert(err.response?.data?.message || "Failed to delete feedback")
+      showError(err.response?.data?.message || "We couldn't delete this feedback. Please try again.")
     }
   }
 
@@ -93,7 +95,7 @@ export default function ReviewsPage() {
     try {
       await adminReviewsAPI.updateResponse(feedbackId, response)
       // Update local state
-      setFeedbacks(feedbacks.map(f => 
+      setFeedbacks(feedbacks.map(f =>
         f.id === feedbackId ? { ...f, adminResponse: response } : f
       ))
       if (selected && selected.id === feedbackId) {
@@ -101,13 +103,13 @@ export default function ReviewsPage() {
       }
     } catch (err) {
       console.error("Error updating response:", err)
-      alert(err.response?.data?.message || "Failed to update response")
+      showError(err.response?.data?.message || "We couldn't update the response. Please try again.")
     }
   }
 
   const handleRespondToContact = async (contactId, response) => {
     if (!response.trim()) {
-      alert("Please enter a response")
+      showWarning("Please enter a response")
       return
     }
 
@@ -117,10 +119,10 @@ export default function ReviewsPage() {
       fetchContactMessages()
       setSelected(null)
       setContactResponse("")
-      alert("Response sent successfully")
+      showSuccess("Response sent successfully")
     } catch (err) {
       console.error("Error responding to contact:", err)
-      alert(err.response?.data?.message || "Failed to send response")
+      showError(err.response?.data?.message || "We couldn't send the response. Please try again.")
     }
   }
 
@@ -211,15 +213,15 @@ export default function ReviewsPage() {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex gap-2">
-                          <button 
-                            onClick={() => { setSelected({ ...m, isContact: true, viewOnly: true }); setContactResponse(m.adminResponse || '') }} 
+                          <button
+                            onClick={() => { setSelected({ ...m, isContact: true, viewOnly: true }); setContactResponse(m.adminResponse || '') }}
                             className="px-2 py-1 rounded bg-white/5 hover:bg-white/10 text-xs flex items-center gap-1"
                           >
                             <Eye className="w-3 h-3" />
                             View
                           </button>
-                          <button 
-                            onClick={() => { setSelected({ ...m, isContact: true, viewOnly: false }); setContactResponse(m.adminResponse || '') }} 
+                          <button
+                            onClick={() => { setSelected({ ...m, isContact: true, viewOnly: false }); setContactResponse(m.adminResponse || '') }}
                             className="px-2 py-1 rounded bg-[#5D38DE]/20 hover:bg-[#5D38DE]/30 text-[#5D38DE] text-xs flex items-center gap-1"
                           >
                             <MessageSquare className="w-3 h-3" />
@@ -242,8 +244,8 @@ export default function ReviewsPage() {
           <div className="relative z-10 w-full max-w-2xl rounded-2xl border border-white/20 bg-[#161619] shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-[#161619] border-b border-white/10 px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-bold text-white">Feedback Details</h3>
-              <button 
-                onClick={() => setSelected(null)} 
+              <button
+                onClick={() => setSelected(null)}
                 className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
               >
                 <X className="w-5 h-5 text-white/80" />
@@ -310,7 +312,7 @@ export default function ReviewsPage() {
                   )}
                 </button>
                 <button
-                  onClick={() => { 
+                  onClick={() => {
                     if (confirm("Are you sure you want to delete this feedback?")) {
                       handleDeleteFeedback(selected.id)
                     }
@@ -334,8 +336,8 @@ export default function ReviewsPage() {
               <h3 className="text-xl font-bold text-white">
                 {selected.viewOnly ? 'Contact Message' : 'Respond to Contact'}
               </h3>
-              <button 
-                onClick={() => setSelected(null)} 
+              <button
+                onClick={() => setSelected(null)}
                 className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
               >
                 <X className="w-5 h-5 text-white/80" />
@@ -386,12 +388,12 @@ export default function ReviewsPage() {
               {!selected.viewOnly && (
                 <div>
                   <p className="text-sm font-medium text-white/80 mb-2">Your Response</p>
-                  <textarea 
-                    rows={6} 
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#5D38DE] focus:border-transparent resize-none" 
-                    value={contactResponse} 
-                    onChange={(e) => setContactResponse(e.target.value)} 
-                    placeholder="Type your response to the user..." 
+                  <textarea
+                    rows={6}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#5D38DE] focus:border-transparent resize-none"
+                    value={contactResponse}
+                    onChange={(e) => setContactResponse(e.target.value)}
+                    placeholder="Type your response to the user..."
                   />
                   <p className="text-xs text-white/50 mt-2">This response will be sent as a notification to the user</p>
                 </div>
@@ -399,10 +401,10 @@ export default function ReviewsPage() {
 
               {selected.viewOnly ? (
                 <div className="flex justify-end pt-4 border-t border-white/10">
-                  <button 
-                    onClick={() => { 
+                  <button
+                    onClick={() => {
                       setSelected({ ...selected, viewOnly: false })
-                    }} 
+                    }}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#5D38DE] hover:bg-[#4d2ec4] text-white text-sm font-medium transition-colors"
                   >
                     <MessageSquare className="w-4 h-4" />
@@ -411,14 +413,14 @@ export default function ReviewsPage() {
                 </div>
               ) : (
                 <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
-                  <button 
-                    onClick={() => setSelected(null)} 
+                  <button
+                    onClick={() => setSelected(null)}
                     className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors"
                   >
                     Cancel
                   </button>
-                  <button 
-                    onClick={() => handleRespondToContact(selected.id, contactResponse)} 
+                  <button
+                    onClick={() => handleRespondToContact(selected.id, contactResponse)}
                     disabled={!contactResponse.trim()}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#5D38DE] hover:bg-[#4d2ec4] text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >

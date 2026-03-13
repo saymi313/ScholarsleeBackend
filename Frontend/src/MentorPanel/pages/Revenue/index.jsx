@@ -22,10 +22,10 @@ const Revenue = () => {
         if (response.data?.success) {
           setData(response.data.data)
         } else {
-          setError(response.data?.message || "Failed to load revenue data")
+          setError(response.data?.message || "We couldn't load your revenue data. Please refresh the page.")
         }
       } catch (err) {
-        setError(err.message || "Failed to load revenue data")
+        setError(err.message || "We couldn't load your revenue data. Please refresh the page.")
       } finally {
         setLoading(false)
       }

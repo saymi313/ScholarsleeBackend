@@ -3,9 +3,11 @@
 import { useState, useEffect, useMemo } from "react"
 import DataTable from "../../components/DataTable"
 import { adminUsersAPI } from "../../../utils/api"
+import { useToast } from "../../../context/ToastContext"
 import { Loader2, X, User as UserIcon, Mail, Phone, MapPin, Clock, DollarSign, Calendar, CheckCircle, XCircle, Eye } from "lucide-react"
 
 export default function UsersPage() {
+  const { showError } = useToast()
   const [country, setCountry] = useState("all")
   const [status, setStatus] = useState("all")
   const [users, setUsers] = useState([])
@@ -38,15 +40,15 @@ export default function UsersPage() {
       header: "Actions",
       render: (_, r) => (
         <div className="flex gap-2">
-          <button 
+          <button
             onClick={() => handleViewUser(r.id)}
             className="px-2 py-1 rounded bg-[#5D38DE]/20 hover:bg-[#5D38DE]/30 text-[#5D38DE] text-xs flex items-center gap-1"
           >
             <Eye className="w-3 h-3" />
             View
           </button>
-          <button 
-            onClick={() => handleToggleStatus(r.id, r.status === "active" ? false : true)} 
+          <button
+            onClick={() => handleToggleStatus(r.id, r.status === "active" ? false : true)}
             disabled={actionLoading === r.id}
             className="px-2 py-1 rounded bg-rose-500/15 text-rose-300 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -67,17 +69,17 @@ export default function UsersPage() {
     try {
       setLoading(true)
       setError("")
-      
+
       const response = await adminUsersAPI.getAllUsers({ country, status })
-      
+
       if (response.data?.success) {
         setUsers(response.data.data.users || [])
       } else {
-        setError(response.data?.message || "Failed to load users")
+        setError(response.data?.message || "We couldn't load users. Please try again.")
       }
     } catch (err) {
       console.error("Error fetching users:", err)
-      setError(err.response?.data?.message || err.message || "Failed to load users")
+      setError(err.response?.data?.message || err.message || "We couldn't load users. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -103,11 +105,11 @@ export default function UsersPage() {
         setUserDetails(response.data.data.user)
         setSelectedUser(userId)
       } else {
-        alert(response.data?.message || "Failed to load user details")
+        showError(response.data?.message || "We couldn't load user details. Please try again.")
       }
     } catch (err) {
       console.error("Error fetching user details:", err)
-      alert(err.response?.data?.message || err.message || "Failed to load user details")
+      showError(err.response?.data?.message || err.message || "We couldn't load user details. Please try again.")
     } finally {
       setDetailsLoading(false)
     }
@@ -121,11 +123,11 @@ export default function UsersPage() {
         // Refresh users list
         await fetchUsers()
       } else {
-        alert(response.data?.message || "Failed to update user status")
+        showError(response.data?.message || "We couldn't update user status. Please try again.")
       }
     } catch (err) {
       console.error("Error updating user status:", err)
-      alert(err.response?.data?.message || err.message || "Failed to update user status")
+      showError(err.response?.data?.message || err.message || "We couldn't update user status. Please try again.")
     } finally {
       setActionLoading(null)
     }
@@ -184,8 +186,8 @@ export default function UsersPage() {
           <div className="relative z-10 w-full max-w-2xl rounded-2xl border border-white/20 bg-[#161619] shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-[#161619] border-b border-white/10 px-6 py-4 flex items-center justify-between">
               <h3 className="text-xl font-bold text-white">User Details</h3>
-              <button 
-                onClick={() => { setSelectedUser(null); setUserDetails(null) }} 
+              <button
+                onClick={() => { setSelectedUser(null); setUserDetails(null) }}
                 className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
               >
                 <X className="w-5 h-5 text-white/80" />
@@ -235,9 +237,8 @@ export default function UsersPage() {
                   </div>
                   <div className="bg-white/5 rounded-lg p-4">
                     <p className="text-xs text-white/50 mb-1">Status</p>
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      userDetails.status === 'active' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/10 text-white/80'
-                    }`}>
+                    <span className={`px-2 py-1 rounded text-xs ${userDetails.status === 'active' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/10 text-white/80'
+                      }`}>
                       {userDetails.status}
                     </span>
                   </div>
@@ -310,11 +311,10 @@ export default function UsersPage() {
                 <button
                   onClick={() => handleToggleStatus(userDetails.id, userDetails.status === 'active' ? false : true)}
                   disabled={actionLoading === userDetails.id}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                    userDetails.status === 'active' 
-                      ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300' 
-                      : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300'
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${userDetails.status === 'active'
+                    ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300'
+                    : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300'
+                    }`}
                 >
                   {actionLoading === userDetails.id ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

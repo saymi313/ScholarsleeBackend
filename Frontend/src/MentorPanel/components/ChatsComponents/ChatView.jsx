@@ -18,7 +18,7 @@ export default function ChatView({ chat, onBack }) {
     isBlocked: chat.isBlocked || false,
     isArchived: chat.isArchived || false,
   })
-  
+
   const { user } = useAuth()
   const currentUserId = useMemo(() => {
     const id = user?._id || user?.id
@@ -26,12 +26,12 @@ export default function ChatView({ chat, onBack }) {
   }, [user?._id, user?.id])
   const otherParticipantId = chat.conversationId
     ? chat.conversationId
-        .split('_')
-        .find(id => id && id !== currentUserId)
+      .split('_')
+      .find(id => id && id !== currentUserId)
     : null
 
-  const { 
-    messages: chatMessages, 
+  const {
+    messages: chatMessages,
     loading: messagesLoading,
     sendMessage: sendChatMessage,
     fetchMessages,
@@ -71,7 +71,7 @@ export default function ChatView({ chat, onBack }) {
         sender: isMe ? 'me' : 'them',
         text: msg.content,
         time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        avatar: !isMe ? (senderProfile?.avatar || chat.avatar || '/u.jpeg') : null,
+        avatar: !isMe ? (senderProfile?.avatar || chat.avatar) : null,
         senderName: !isMe
           ? `${senderProfile?.firstName || ''} ${senderProfile?.lastName || ''}`.trim() || chat.name
           : 'You',
@@ -84,7 +84,7 @@ export default function ChatView({ chat, onBack }) {
 
   const handleSendMessage = async (messageText) => {
     if (!messageText.trim() || !chat.conversationId) return
-    
+
     try {
       await sendChatMessage(messageText)
     } catch (error) {
@@ -142,7 +142,7 @@ export default function ChatView({ chat, onBack }) {
   const handleClearChat = async (chatId) => {
     try {
       const response = await api.delete(`/chat/conversations/${chatId}/messages`)
-      
+
       if (response.data.success) {
         // Chat cleared successfully
         // Refresh messages to show empty chat
@@ -196,7 +196,7 @@ export default function ChatView({ chat, onBack }) {
       </div>
 
       {/* Input Area */}
-      <ChatInput 
+      <ChatInput
         onVoiceRecord={() => handleFeatureClick("Voice Recording")}
         onSendMessage={handleSendMessage}
         onSendFile={handleSendFile}

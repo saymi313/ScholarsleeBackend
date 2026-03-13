@@ -15,7 +15,7 @@ const SessionsTable = () => {
         if (response.data?.success) {
           setSessions(response.data.data || [])
         } else {
-          setError(response.data?.message || "Failed to load sessions")
+          setError(response.data?.message || "We couldn't load sessions. Please refresh the page.")
         }
       } catch (err) {
         console.error("Error fetching sessions:", err)

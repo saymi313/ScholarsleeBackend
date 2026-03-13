@@ -2,7 +2,7 @@ import { useState } from "react"
 
 export default function TimelineForm({ value, onChange }) {
   const [errors, setErrors] = useState({})
-  
+
   const timelineOptions = [
     { value: "Immediate", label: "Immediate (within 1 month)" },
     { value: "Short-term", label: "Short-term (1-3 months)" },
@@ -13,15 +13,15 @@ export default function TimelineForm({ value, onChange }) {
 
   const validateField = (field, val) => {
     const newErrors = { ...errors }
-    
+
     if (field === 'timeline') {
       if (!val || val.trim() === '') {
-        newErrors.timeline = 'Study timeline is required'
+        newErrors.timeline = 'Please select your study timeline'
       } else {
         delete newErrors.timeline
       }
     }
-    
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -40,11 +40,10 @@ export default function TimelineForm({ value, onChange }) {
         <select
           value={value.timeline || ""}
           onChange={(e) => handleChange('timeline', e.target.value)}
-          className={`w-full bg-white border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
-            errors.timeline 
-              ? 'border-red-300 focus:ring-red-500' 
+          className={`w-full bg-white border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${errors.timeline
+              ? 'border-red-300 focus:ring-red-500'
               : 'border-gray-300 focus:ring-[#5D38DE]'
-          }`}
+            }`}
         >
           <option value="">Select your preferred timeline</option>
           {timelineOptions.map((option) => (

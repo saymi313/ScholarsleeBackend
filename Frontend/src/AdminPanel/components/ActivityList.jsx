@@ -16,11 +16,11 @@ export default function ActivityList() {
         if (response.data?.success) {
           setRows(response.data.data?.data || [])
         } else {
-          setError(response.data?.message || "Failed to load leaderboard")
+          setError(response.data?.message || "We couldn't load the leaderboard. Please try again.")
         }
       } catch (err) {
         console.error("Error fetching mentor leaderboard:", err)
-        setError(err.message || "Failed to load leaderboard")
+        setError(err.message || "We couldn't load the leaderboard. Please try again.")
       } finally {
         setLoading(false)
       }
@@ -59,7 +59,7 @@ export default function ActivityList() {
         <h3 className="text-lg font-semibold">Mentor Leaderboard</h3>
         <p className="text-xs text-white/60">Top {rows.length} by services sold</p>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto -mx-4 px-4 pb-2 lg:mx-0 lg:px-0 lg:pb-0">
         <table className="w-full text-sm">
           <thead className="bg-white/5">
             <tr className="text-left">
@@ -90,4 +90,3 @@ export default function ActivityList() {
     </div>
   )
 }
-  

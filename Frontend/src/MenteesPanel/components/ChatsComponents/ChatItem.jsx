@@ -1,15 +1,15 @@
 import React from "react"
 import { Pin, VolumeX } from "lucide-react"
+import NameAvatar from "../../../shared/components/NameAvatar"
 
 export default function ChatItem({ chat, isSelected, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`w-full p-3 md:p-4 flex items-start gap-3 hover:bg-gray-50 transition-colors ${
-        isSelected ? "bg-gray-50" : ""
-      }`}
+      className={`w-full p-3 md:p-4 flex items-start gap-3 hover:bg-gray-50 transition-colors ${isSelected ? "bg-gray-50" : ""
+        }`}
     >
-      <img src={chat.avatar || "/a.jpg"} alt={chat.name} className="w-10 h-10 rounded-full" />
+      <NameAvatar src={chat.avatar} name={chat.name} size="w-10 h-10" />
       <div className="min-w-0 flex-1 text-left">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1 min-w-0">

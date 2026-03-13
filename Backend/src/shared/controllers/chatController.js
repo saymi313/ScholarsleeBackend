@@ -58,7 +58,7 @@ const getUserConversations = async (req, res) => {
   try {
     const currentUserId = req.user.id;
     const { archived = false } = req.query;
-    
+
     console.log('📋 Fetching conversations for user:', currentUserId);
 
     const query = {
@@ -75,28 +75,35 @@ const getUserConversations = async (req, res) => {
       .populate('participants', 'profile.firstName profile.lastName profile.avatar role email')
       .populate('lastMessage.sender', 'profile.firstName profile.lastName')
       .sort({ 'lastMessage.timestamp': -1, updatedAt: -1 });
-    
+
     console.log('📋 Found conversations:', conversations.length);
 
     // Add online status and format data
-    const formattedConversations = conversations.map(conv => {
-      const otherParticipant = conv.participants.find(p => p._id.toString() !== currentUserId);
-      const myUnread = conv.unreadCount.find(u => u.userId.toString() === currentUserId);
-      
-      return {
-        _id: conv._id,
-        conversationId: conv.conversationId,
-        participant: otherParticipant,
-        lastMessage: conv.lastMessage,
-        unreadCount: myUnread ? myUnread.count : 0,
-        isPinned: conv.isPinned.includes(currentUserId),
-        isMuted: conv.isMuted.includes(currentUserId),
-        isBlocked: conv.isBlocked,
-        isArchived: conv.isArchived.includes(currentUserId),
-        isOnline: isUserOnline(otherParticipant._id),
-        updatedAt: conv.updatedAt
-      };
-    });
+    // Filter out conversations where the other participant no longer exists (deleted account)
+    const formattedConversations = conversations
+      .map(conv => {
+        const otherParticipant = conv.participants.find(p => p && p._id && p._id.toString() !== currentUserId);
+
+        // Skip conversations where the other participant's account was deleted
+        if (!otherParticipant) return null;
+
+        const myUnread = conv.unreadCount.find(u => u.userId.toString() === currentUserId);
+
+        return {
+          _id: conv._id,
+          conversationId: conv.conversationId,
+          participant: otherParticipant,
+          lastMessage: conv.lastMessage,
+          unreadCount: myUnread ? myUnread.count : 0,
+          isPinned: conv.isPinned.includes(currentUserId),
+          isMuted: conv.isMuted.includes(currentUserId),
+          isBlocked: conv.isBlocked,
+          isArchived: conv.isArchived.includes(currentUserId),
+          isOnline: isUserOnline(otherParticipant._id),
+          updatedAt: conv.updatedAt
+        };
+      })
+      .filter(Boolean); // Remove nulls from deleted-participant conversations
 
     return sendSuccessResponse(res, 'Conversations retrieved successfully', {
       conversations: formattedConversations
@@ -151,7 +158,7 @@ const getConversationMessages = async (req, res) => {
         $set: { isRead: true, readAt: new Date() }
       }
     );
-    
+
     console.log(`👁️ Marked ${markResult.modifiedCount} messages as read for user:`, currentUserId);
 
     // Reset unread count
@@ -239,7 +246,7 @@ const sendMessage = async (req, res) => {
     console.log('📤 Emitting message:new to receiver:', receiverId);
     console.log('📤 Message content:', content);
     console.log('📤 ConversationId:', conversationId);
-    
+
     const emitted = emitToUser(receiverId, 'message:new', {
       message,
       conversation: {
@@ -260,15 +267,16 @@ const sendMessage = async (req, res) => {
     // Get sender's info for notification
     const sender = await User.findById(currentUserId).select('profile.firstName profile.lastName profile.avatar role');
     const senderName = sender ? `${sender.profile.firstName} ${sender.profile.lastName}`.trim() : 'Someone';
-    
+
     // Get receiver's info to determine the correct action URL
-    const receiver = await User.findById(receiverId).select('role');
+    const receiver = await User.findById(receiverId).select('role email profile.firstName profile.lastName');
+    const receiverName = receiver ? `${receiver.profile.firstName} ${receiver.profile.lastName}`.trim() : 'User';
     // Use environment variable or default based on role
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const actionUrl = receiver?.role === 'mentor' 
-      ? `${frontendUrl}/mentor/chats` 
+    const actionUrl = receiver?.role === 'mentor'
+      ? `${frontendUrl}/mentor/chats`
       : `${frontendUrl}/mentees/chats`;
-    
+
     // Create notification for receiver
     const notification = await Notification.create({
       userId: receiverId,
@@ -286,15 +294,32 @@ const sendMessage = async (req, res) => {
       actionUrl: actionUrl,
       actionText: 'View Message'
     });
-    
+
     console.log('🔔 Notification created for user:', receiverId);
-    
+
     // Emit notification via socket
     const notificationEmitted = emitToUser(receiverId, 'notification:new', {
       notification: notification.toJSON()
     });
-    
+
     console.log('🔔 Notification emitted:', notificationEmitted ? 'YES' : 'NO');
+
+    // Send email notification to receiver
+    try {
+      const emailService = require('../../shared/services/emailService');
+      if (receiver?.email) {
+        await emailService.sendNewMessageNotificationEmail(
+          receiver.email,
+          receiverName,
+          senderName,
+          sender?.role || 'user'
+        );
+        console.log('📧 Email notification sent to:', receiver.email);
+      }
+    } catch (emailErr) {
+      console.warn('⚠️ Could not send email notification:', emailErr.message);
+      // Don't fail the whole request if email fails
+    }
 
     return sendSuccessResponse(res, 'Message sent successfully', { message });
   } catch (error) {
@@ -456,9 +481,9 @@ const deleteAllMessages = async (req, res) => {
     const currentUserId = req.user.id;
 
     // Verify user is part of the conversation
-    const conversation = await Conversation.findOne({ 
+    const conversation = await Conversation.findOne({
       conversationId,
-      participants: currentUserId 
+      participants: currentUserId
     });
 
     if (!conversation) {

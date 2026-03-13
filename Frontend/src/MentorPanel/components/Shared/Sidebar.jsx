@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { BarChart3, Briefcase, MessageSquare, Award, Users, DollarSign, Settings, Menu, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { BarChart3, Briefcase, MessageSquare, Award, Users, DollarSign, Settings, Menu, X, ChevronLeft, ChevronRight, Wallet } from "lucide-react"
 
 const Sidebar = ({ hideMobileMenu = false }) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -14,9 +14,9 @@ const Sidebar = ({ hideMobileMenu = false }) => {
   // Handle sidebar collapse with delay
   const handleToggleCollapse = () => {
     if (isTransitioning) return
-    
+
     setIsTransitioning(true)
-    
+
     if (isCollapsed) {
       // Opening sidebar
       setIsCollapsed(false)
@@ -41,6 +41,7 @@ const Sidebar = ({ hideMobileMenu = false }) => {
     { icon: Award, label: "Badges", path: "/mentor/badges" },
     { icon: Users, label: "Meetings", path: "/mentor/meetings" },
     { icon: DollarSign, label: "Revenue", path: "/mentor/revenue" },
+    { icon: Wallet, label: "Wallet", path: "/mentor/wallet" },
     { icon: Settings, label: "Profile Settings", path: "/mentor/settings" },
   ]
 
@@ -82,7 +83,7 @@ const Sidebar = ({ hideMobileMenu = false }) => {
               <h2 className={`text-xl font-bold text-white transition-all duration-300 ${isCollapsed ? 'lg:hidden' : ''}`}>
                 Scholarslee
               </h2>
-              
+
               {/* Desktop toggle button - next to Scholarslee */}
               <button
                 onClick={handleToggleCollapse}
@@ -92,7 +93,7 @@ const Sidebar = ({ hideMobileMenu = false }) => {
                 {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
               </button>
             </div>
-            
+
             {isCollapsed && (
               <div className="hidden lg:flex items-center justify-center">
                 <div className="w-8 h-8 bg-[#5D38DE] rounded-lg flex items-center justify-center">
@@ -113,10 +114,9 @@ const Sidebar = ({ hideMobileMenu = false }) => {
                     w-full flex items-center gap-4 px-4 py-3.5 rounded-xl
                     transition-all duration-200
                     ${isCollapsed ? 'lg:justify-center' : ''}
-                    ${
-                      isActive
-                        ? "bg-[#2d2d2d] text-white shadow-lg"
-                        : "text-gray-400 hover:bg-[#242424] hover:text-white"
+                    ${isActive
+                      ? "bg-[#2d2d2d] text-white shadow-lg"
+                      : "text-gray-400 hover:bg-[#242424] hover:text-white"
                     }
                   `}
                   title={isCollapsed ? item.label : ''}

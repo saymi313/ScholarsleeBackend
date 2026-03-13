@@ -17,11 +17,11 @@ export default function UsersByCountryChart() {
         if (response.data?.success) {
           setData(response.data.data?.data || [])
         } else {
-          setError(response.data?.message || "Failed to load country data")
+          setError(response.data?.message || "We couldn't load country data. Please try again.")
         }
       } catch (err) {
         console.error("Error fetching users by country:", err)
-        setError(err.message || "Failed to load country data")
+        setError(err.message || "We couldn't load country data. Please try again.")
       } finally {
         setLoading(false)
       }
@@ -51,7 +51,7 @@ export default function UsersByCountryChart() {
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#161619] p-4 h-[420px]">
+    <div className="rounded-xl border border-white/10 bg-[#161619] p-4 h-80 lg:h-[420px]">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-lg font-semibold">Users by Country</h3>
       </div>

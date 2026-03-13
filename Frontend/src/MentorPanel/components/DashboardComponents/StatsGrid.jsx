@@ -17,11 +17,11 @@ const StatsGrid = () => {
         if (response.data?.success) {
           setStats(response.data.data)
         } else {
-          setError(response.data?.message || "Failed to load stats")
+          setError(response.data?.message || "We couldn't load your stats. Please refresh the page.")
         }
       } catch (err) {
         console.error("Error fetching dashboard stats:", err)
-        setError(err.message || "Failed to load stats")
+        setError(err.message || "We couldn't load your stats. Please refresh the page.")
       } finally {
         setLoading(false)
       }
@@ -31,12 +31,11 @@ const StatsGrid = () => {
   }, [])
 
   const formatCurrency = (value) => {
-    // Stripe/Payment amounts are always stored in cents, divide by 100 to get dollars
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       maximumFractionDigits: 2,
-    }).format(value / 100)
+    }).format(value)
   }
 
   const statsConfig = [

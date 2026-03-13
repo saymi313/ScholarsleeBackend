@@ -54,7 +54,7 @@ const MeetingConfirmationModal = ({ isOpen, meetingDetails, onConfirm, onCancel 
                   <span className="text-white ml-2 font-medium">{meetingDetails.menteeName}</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <MessageSquare className="w-4 h-4 text-gray-400" />
                 <div>
@@ -62,7 +62,7 @@ const MeetingConfirmationModal = ({ isOpen, meetingDetails, onConfirm, onCancel 
                   <span className="text-white ml-2 font-medium">{meetingDetails.topic}</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <Calendar className="w-4 h-4 text-gray-400" />
                 <div>
@@ -70,7 +70,7 @@ const MeetingConfirmationModal = ({ isOpen, meetingDetails, onConfirm, onCancel 
                   <span className="text-white ml-2 font-medium">{formatDate(meetingDetails.date)}</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <Clock className="w-4 h-4 text-gray-400" />
                 <div>
@@ -78,7 +78,7 @@ const MeetingConfirmationModal = ({ isOpen, meetingDetails, onConfirm, onCancel 
                   <span className="text-white ml-2 font-medium">{formatTime(meetingDetails.time)}</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <Clock className="w-4 h-4 text-gray-400" />
                 <div>
@@ -86,7 +86,7 @@ const MeetingConfirmationModal = ({ isOpen, meetingDetails, onConfirm, onCancel 
                   <span className="text-white ml-2 font-medium">{meetingDetails.duration} minutes</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <MapPin className="w-4 h-4 text-gray-400" />
                 <div>
@@ -114,19 +114,15 @@ const MeetingConfirmationModal = ({ isOpen, meetingDetails, onConfirm, onCancel 
             <ul className="space-y-2 text-sm text-gray-300">
               <li className="flex items-start gap-2">
                 <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span>Generate a demo meeting link for testing</span>
+                <span>A Google Meet link will be created for this session</span>
               </li>
               <li className="flex items-start gap-2">
                 <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span>Prepare meeting details and information</span>
+                <span>Both you and your mentee will receive the meeting details</span>
               </li>
               <li className="flex items-start gap-2">
                 <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span>Display the demo link for demonstration</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                <span>This is a demo version - no real meeting created</span>
+                <span>You can share the link directly or via email</span>
               </li>
             </ul>
           </div>
@@ -144,7 +140,7 @@ const MeetingConfirmationModal = ({ isOpen, meetingDetails, onConfirm, onCancel 
             onClick={onConfirm}
             className="flex-1 px-6 py-3 bg-[#5D38DE] text-white rounded-lg hover:bg-[#4d2ec4] transition-colors"
           >
-            Generate Demo Link
+            Confirm & Generate Link
           </button>
         </div>
       </div>

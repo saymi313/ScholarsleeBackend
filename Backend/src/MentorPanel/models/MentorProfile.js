@@ -41,7 +41,6 @@ const experienceSchema = new mongoose.Schema({
   },
   duration: {
     type: String,
-    required: [true, 'Duration is required'],
     trim: true
   },
   description: {
@@ -96,7 +95,7 @@ const mentorProfileSchema = new mongoose.Schema({
   achievements: [{
     type: String,
     trim: true,
-    maxlength: [200, 'Achievement cannot exceed 200 characters']
+    maxlength: [1000, 'Achievement cannot exceed 1000 characters']
   }],
   rating: {
     type: Number,
@@ -177,9 +176,19 @@ const mentorProfileSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'MentorService'
   }],
+  followers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   successStory: {
     title: { type: String, trim: true },
-    content: { type: String, trim: true, maxlength: 5000 },
+    content: { type: String, trim: true, maxlength: 5000 }, // Legacy field, keeping for backwards compatibility
+    background: { type: String, trim: true, maxlength: 2000 },
+    challenges: { type: String, trim: true, maxlength: 2000 },
+    journey: { type: String, trim: true, maxlength: 3000 },
+    currentStatus: { type: String, trim: true, maxlength: 2000 },
+    keyLearnings: { type: String, trim: true, maxlength: 2000 },
+    motivation: { type: String, trim: true, maxlength: 2000 },
     mediaUrls: [{ type: String }],
     createdAt: { type: Date, default: null },
     isPublished: { type: Boolean, default: false }
@@ -192,7 +201,25 @@ const mentorProfileSchema = new mongoose.Schema({
     type: String,
     enum: ['Beginner', 'Level 1 Seller', 'Level 2 Seller', 'Best Seller'],
     default: 'Beginner'
-  }
+  },
+  wallet: {
+    availableBalance: { type: Number, default: 0 },
+    pendingEarnings: { type: Number, default: 0 },
+    totalWithdrawn: { type: Number, default: 0 }
+  },
+  payoutMethods: [{
+    type: {
+      type: String,
+      enum: ['Bank Transfer'],
+      required: true,
+      default: 'Bank Transfer'
+    },
+    bankName: { type: String, required: true },
+    country: { type: String, required: true },
+    accountNumber: { type: String, required: true },
+    accountTitle: { type: String, required: true },
+    isDefault: { type: Boolean, default: false }
+  }]
 }, {
   timestamps: true
 });
@@ -215,9 +242,68 @@ mentorProfileSchema.index({
   totalReviews: -1
 });
 
+// Pre-save hook to generate slug if not exists
+mentorProfileSchema.pre('save', async function (next) {
+  // Generate slug from name if it doesn't exist
+  if (!this.slug && this.userId) {
+    try {
+      const User = mongoose.model('User');
+      const user = await User.findById(this.userId);
+
+      if (!user) {
+        // Fallback to userId if user not found
+        this.slug = this.userId.toString();
+        return next();
+      }
+
+      const { firstName, lastName } = user.profile;
+      let baseSlug = `${firstName || ''} ${lastName || ''}`
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '') // remove non-alphanumeric except spaces and hyphens
+        .replace(/[\s_-]+/g, '-') // replace spaces, underscores, hyphens with single hyphen
+        .replace(/^-+|-+$/g, ''); // trim hyphens
+
+      if (!baseSlug) {
+        baseSlug = 'mentor';
+      }
+
+      let slug = baseSlug;
+      let counter = 1;
+      // Check for uniqueness
+      let exists = await mongoose.model('MentorProfile').findOne({ slug });
+
+      while (exists) {
+        slug = `${baseSlug}-${counter}`;
+        exists = await mongoose.model('MentorProfile').findOne({ slug });
+        counter++;
+      }
+
+      this.slug = slug;
+    } catch (err) {
+      console.error('Error generating slug:', err);
+      // Final fallback to userId on error to prevent save failure
+      this.slug = this.userId.toString();
+    }
+  }
+  next();
+});
+
 // Virtual for full name (populated from User)
 mentorProfileSchema.virtual('fullName').get(function () {
   return this.userId?.profile?.firstName + ' ' + this.userId?.profile?.lastName;
+});
+
+// Virtual for profile completion check
+mentorProfileSchema.virtual('isProfileComplete').get(function () {
+  return !!(
+    this.title &&
+    this.bio &&
+    this.specializations?.length > 0 &&
+    this.education?.length > 0 &&
+    this.experience?.length > 0 &&
+    this.background
+  );
 });
 
 // Method to calculate average rating

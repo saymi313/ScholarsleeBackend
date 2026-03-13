@@ -116,18 +116,20 @@ bookingSchema.set('toObject', { virtuals: true });
 
 // Pre-save middleware to validate booking
 bookingSchema.pre('save', function(next) {
-  // Validate that scheduled date is in the future
-  if (this.scheduledDate <= new Date()) {
-    return next(new Error('Scheduled date must be in the future'));
+  // Only validate scheduled date if it's being set/modified and it exists
+  if (this.isModified('scheduledDate') && this.scheduledDate) {
+    if (this.scheduledDate <= new Date()) {
+      return next(new Error('Scheduled date must be in the future'));
+    }
   }
   
   // Validate duration is positive
-  if (this.duration <= 0) {
+  if (this.isModified('duration') && this.duration <= 0) {
     return next(new Error('Duration must be positive'));
   }
   
   // Validate total amount is positive
-  if (this.totalAmount <= 0) {
+  if (this.isModified('totalAmount') && this.totalAmount <= 0) {
     return next(new Error('Total amount must be positive'));
   }
   

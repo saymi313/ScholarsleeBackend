@@ -63,11 +63,11 @@ export default function ContactForm() {
         })
         setTimeout(() => setSuccess(false), 5000)
       } else {
-        setError(response.data?.message || "Failed to submit message")
+        setError(response.data?.message || "We couldn't send your message. Please try again.")
       }
     } catch (err) {
       console.error("Error submitting contact form:", err)
-      setError(err.response?.data?.message || err.message || "Failed to submit message. Please try again.")
+      setError(err.response?.data?.message || err.message || "We couldn't send your message. Please try again.")
     } finally {
       setLoading(false)
     }

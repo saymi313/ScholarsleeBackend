@@ -15,14 +15,14 @@ export default function LoginRequiredError() {
         <div className="relative overflow-hidden rounded-3xl border border-gray-200/50 bg-white/95 shadow-2xl ring-1 ring-gray-200/50 backdrop-blur-xl">
           {/* Animated background gradient */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 opacity-80" />
-          
+
           {/* Floating particles effect */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute -top-4 -right-4 h-8 w-8 rounded-full bg-blue-400/20 animate-pulse" />
             <div className="absolute top-1/4 -left-2 h-4 w-4 rounded-full bg-indigo-400/30 animate-bounce" style={{ animationDelay: '0.5s' }} />
             <div className="absolute bottom-1/4 -right-2 h-6 w-6 rounded-full bg-blue-300/25 animate-pulse" style={{ animationDelay: '1s' }} />
           </div>
-          
+
           <div className="relative p-8 md:p-12">
             {/* Icon with animation */}
             <div className="flex justify-center mb-8">
@@ -38,12 +38,12 @@ export default function LoginRequiredError() {
             {/* Content */}
             <div className="text-center space-y-6">
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-                Authentication Required
+                Please Log In First
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed max-w-md mx-auto">
-                Please log in to access your profile and continue your journey with us.
+                You need to be logged in to view your bookings. Please log in or create an account to continue.
               </p>
-              
+
               {/* Features */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
                 <div className="flex items-center justify-center space-x-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
@@ -78,8 +78,8 @@ export default function LoginRequiredError() {
             {/* Additional Info */}
             <div className="mt-8 text-center">
               <p className="text-sm text-gray-500">
-                Don't have an account? 
-                <button 
+                Don't have an account?
+                <button
                   onClick={() => navigate('/signup')}
                   className="ml-1 text-blue-600 hover:text-blue-700 font-medium transition-colors"
                 >

@@ -43,11 +43,11 @@ const Services = () => {
         setServices(response.data.data.services || [])
         setPagination(response.data.data.pagination || { current: 1, pages: 1, total: 0 })
       } else {
-        setError(response.data.message || 'Failed to load services')
+        setError(response.data.message || "We couldn't load your services. Please refresh the page.")
       }
     } catch (error) {
       console.error('Error loading services:', error)
-      setError('Failed to load services')
+      setError("We couldn't load your services. Please refresh the page.")
     } finally {
       setLoading(false)
     }

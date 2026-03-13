@@ -16,11 +16,11 @@ export default function TopServicesChart() {
         if (response.data?.success) {
           setRows(response.data.data?.data || [])
         } else {
-          setError(response.data?.message || "Failed to load top services")
+          setError(response.data?.message || "We couldn't load top services. Please try again.")
         }
       } catch (err) {
         console.error("Error fetching top services:", err)
-        setError(err.message || "Failed to load top services")
+        setError(err.message || "We couldn't load top services. Please try again.")
       } finally {
         setLoading(false)
       }
@@ -51,7 +51,7 @@ export default function TopServicesChart() {
         <h3 className="text-lg font-semibold">Top Services</h3>
         <p className="text-xs text-white/60">By Services Sold</p>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto -mx-4 px-4 pb-2 lg:mx-0 lg:px-0 lg:pb-0">
         <table className="w-full text-sm">
           <thead className="bg-white/5">
             <tr className="text-left">

@@ -8,6 +8,7 @@ import GoogleMeetCallback from '../pages/Meetings/GoogleMeetCallback'
 import Revenue from '../pages/Revenue'
 import Badges from '../pages/Badges'
 import ProfileSettings from '../pages/ProfileSettings'
+import Wallet from '../pages/Wallet'
 
 const MentorRouter = () => {
   return (
@@ -18,6 +19,7 @@ const MentorRouter = () => {
       <Route path="meetings" element={<Meetings />} />
       <Route path="google-meet/callback" element={<GoogleMeetCallback />} />
       <Route path="revenue" element={<Revenue />} />
+      <Route path="wallet" element={<Wallet />} />
       <Route path="badges" element={<Badges />} />
       <Route path="settings" element={<ProfileSettings />} />
       {/* Default redirect for /mentor to /mentor/dashboard */}

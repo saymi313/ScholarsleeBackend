@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useToast } from "../../../context/ToastContext"
 import Sidebar from "../../components/Shared/Sidebar"
 import TopBar from "../../components/Shared/TopBar"
 import MeetingsHeader from "../../components/MeetingsComponents/MeetingsHeader"
@@ -14,6 +15,7 @@ import MeetingDetailsPopup from "../../components/MeetingsComponents/MeetingDeta
 import meetingService from "./meetingService"
 
 const Meetings = () => {
+  const { showError } = useToast()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDate, setSelectedDate] = useState(null)
 
@@ -42,7 +44,7 @@ const Meetings = () => {
       const validationErrors = meetingService.validateMeetingDetails(details)
       if (validationErrors.length > 0) {
         setShowLoader(false)
-        alert(`Validation errors: ${validationErrors.join(', ')}`)
+        showError(`Validation errors: ${validationErrors.join(', ')}`)
         return
       }
 
@@ -71,13 +73,13 @@ const Meetings = () => {
         // Refresh calendar to show new meeting
         setCalendarKey(prev => prev + 1)
       } else {
-        throw new Error(result.error || 'Failed to generate meeting')
+        throw new Error(result.error || "We couldn't generate the meeting link. Please try again.")
       }
 
     } catch (error) {
       console.error('Error generating meeting link:', error)
       setShowLoader(false)
-      alert(`Failed to generate meeting link: ${error.message}`)
+      showError(error.message || `We couldn't generate the meeting link. Please try again.`)
     }
   }
 
@@ -127,7 +129,7 @@ const Meetings = () => {
       await meetingService.beginOAuthFlow()
     } catch (error) {
       console.error('Failed to initiate Google authorization:', error)
-      alert(error.message || 'Failed to start Google authorization flow. Please try again.')
+      showError(error.message || "We couldn't connect to Google. Please try again.")
     }
   }
 

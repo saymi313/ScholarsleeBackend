@@ -43,6 +43,12 @@ const TopBar = () => {
         return { icon: CheckCircle2, accent: "bg-green-500/20 text-green-300" }
       case 'review_received':
         return { icon: Star, accent: "bg-yellow-500/20 text-yellow-300" }
+      case 'payout_completed':
+      case 'payment_successful':
+        return { icon: CheckCircle2, accent: "bg-green-500/20 text-green-300" }
+      case 'payout_rejected':
+      case 'payment_failed':
+        return { icon: AlertTriangle, accent: "bg-red-500/20 text-red-300" }
       default:
         return { icon: Bell, accent: "bg-gray-500/20 text-gray-300" }
     }
@@ -173,17 +179,62 @@ const TopBar = () => {
         setUnreadCount(prev => Math.max(0, prev - 1))
       }
 
-      // Handle action URL - check if it's an external link (Google Meet) or internal route
-      if (notification.actionUrl) {
+      // Determine navigation URL based on notification type
+      let targetUrl = notification.actionUrl
+
+      // If actionUrl is not set or incorrect, determine it from notification type
+      if (!targetUrl || targetUrl === '#') {
+        switch (notification.type) {
+          case 'payout_completed':
+          case 'payout_rejected':
+          case 'payment_successful':
+          case 'payment_failed':
+          case 'booking_created':      // Service sold - payment received
+          case 'booking_confirmed':    // Booking confirmed - payment received
+            targetUrl = '/mentor/revenue'
+            break
+          case 'booking_cancelled':
+            targetUrl = '/mentor/bookings'  // Cancellations still go to bookings
+            break
+          case 'meeting_scheduled':
+          case 'meeting_reminder':
+          case 'meeting_started':
+          case 'meeting_ended':
+            targetUrl = '/mentor/bookings'
+            break
+          case 'review_received':
+            targetUrl = '/mentor/settings' // Reviews section
+            break
+          case 'message_received':
+            targetUrl = '/mentor/chats'
+            break
+          case 'service_approved':
+          case 'service_rejected':
+            targetUrl = '/mentor/services'
+            break
+          case 'mentor_approved':
+          case 'mentor_rejected':
+          case 'mentor_verification':
+          case 'mentor_login_paused':
+            targetUrl = '/mentor/settings'
+            break
+          default:
+            // For unknown types, use actionUrl or main dashboard
+            targetUrl = notification.actionUrl || '/mentor'
+        }
+      }
+
+      // Handle navigation if we have a target URL
+      if (targetUrl) {
         setShowNotifications(false)
 
         // Check if it's an external URL (starts with http:// or https://)
-        if (notification.actionUrl.startsWith('http://') || notification.actionUrl.startsWith('https://')) {
+        if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
           // Open external link (Google Meet) in a new tab
-          window.open(notification.actionUrl, '_blank', 'noopener,noreferrer')
+          window.open(targetUrl, '_blank', 'noopener,noreferrer')
         } else {
           // Navigate to internal route
-          navigate(notification.actionUrl)
+          navigate(targetUrl)
         }
       }
     } catch (error) {
@@ -259,10 +310,7 @@ const TopBar = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 sm:gap-2 bg-[#242424] px-2 sm:px-4 py-2 rounded-full">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-xs sm:text-sm text-gray-300">
-            <span className="sm:hidden">2 sessions today</span>
-            <span className="hidden sm:inline">2 sessions scheduled today</span>
-          </span>
+
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">

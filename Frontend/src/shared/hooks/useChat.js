@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export const useChat = (conversationId, participantId) => {
   const { user } = useAuth();
-  
+
   // Get current user ID for optimistic messages
   const currentUserId = useMemo(() => {
     const id = user?._id || user?.id;
@@ -29,24 +29,24 @@ export const useChat = (conversationId, participantId) => {
       if (response.data.success) {
         setConversations(response.data.data.conversations);
       } else {
-        setError(response.data.message || 'Failed to fetch conversations');
+        setError(response.data.message || "We couldn't load your chats. Please refresh the page.");
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch conversations';
+      const errorMessage = err.response?.data?.message || err.message || "We couldn't load your chats. Please refresh the page.";
       console.error('Error fetching conversations:', errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
   }, []);
-  
+
   // Store the latest fetchConversations in a ref
   fetchConversationsRef.current = fetchConversations;
 
   // Fetch messages
   const fetchMessages = useCallback(async (convId) => {
     if (!convId) return;
-    
+
     try {
       setLoading(true);
       setError(null);
@@ -62,10 +62,10 @@ export const useChat = (conversationId, participantId) => {
         });
         setMessages(Array.from(messageMap.values()));
       } else {
-        setError(response.data.message || 'Failed to fetch messages');
+        setError(response.data.message || "We couldn't load messages. Please try selecting this chat again.");
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch messages';
+      const errorMessage = err.response?.data?.message || err.message || "We couldn't load messages. Please try selecting this chat again.";
       console.error('Error fetching messages:', errorMessage);
       setError(errorMessage);
     } finally {
@@ -83,7 +83,7 @@ export const useChat = (conversationId, participantId) => {
     try {
       const tempId = `temp_${Date.now()}`;
       setError(null);
-      
+
       // Optimistic update - use actual currentUserId to match server response format
       const optimisticMessage = {
         _id: tempId,
@@ -95,7 +95,7 @@ export const useChat = (conversationId, participantId) => {
         isDelivered: false,
         replyTo
       };
-      
+
       setMessages(prev => {
         // Prevent duplicate optimistic messages
         const exists = prev.some(msg => msg._id === tempId);
@@ -126,29 +126,29 @@ export const useChat = (conversationId, participantId) => {
           });
           return Array.from(messageMap.values());
         });
-        
+
         // Update conversation list with new lastMessage
-        setConversations(prev => 
+        setConversations(prev =>
           prev.map(conv =>
             conv.conversationId === conversationId
               ? {
-                  ...conv,
-                  lastMessage: {
-                    content,
-                    sender: response.data.data.message.sender,
-                    timestamp: new Date(),
-                    messageType
-                  },
-                  unreadCount: 0 // Reset unread when sending
-                }
+                ...conv,
+                lastMessage: {
+                  content,
+                  sender: response.data.data.message.sender,
+                  timestamp: new Date(),
+                  messageType
+                },
+                unreadCount: 0 // Reset unread when sending
+              }
               : conv
           )
         );
       } else {
-        throw new Error(response.data.message || 'Failed to send message');
+        throw new Error(response.data.message || "Your message couldn't be sent. Please check your connection and try again.");
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to send message';
+      const errorMessage = err.response?.data?.message || err.message || "Your message couldn't be sent. Please check your connection and try again.";
       console.error('Error sending message:', errorMessage);
       setError(errorMessage);
       // Remove optimistic message on error
@@ -159,7 +159,7 @@ export const useChat = (conversationId, participantId) => {
   // Delete message
   const deleteMessage = useCallback(async (messageId, deleteForEveryone = false) => {
     if (!messageId) return;
-    
+
     try {
       setError(null);
       await chatAPI.deleteMessage(messageId, deleteForEveryone);
@@ -168,7 +168,7 @@ export const useChat = (conversationId, participantId) => {
         return msgId !== messageId.toString();
       }));
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to delete message';
+      const errorMessage = err.response?.data?.message || err.message || "We couldn't delete that message. Please try again.";
       console.error('Error deleting message:', errorMessage);
       setError(errorMessage);
     }
@@ -177,9 +177,9 @@ export const useChat = (conversationId, participantId) => {
   // Start typing indicator
   const startTyping = useCallback(() => {
     if (!conversationId || !participantId) return;
-    
+
     socketService.startTyping(conversationId, participantId);
-    
+
     // Auto-stop after 3 seconds
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
@@ -192,7 +192,7 @@ export const useChat = (conversationId, participantId) => {
   // Stop typing indicator
   const stopTyping = useCallback(() => {
     if (!conversationId || !participantId) return;
-    
+
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
@@ -202,12 +202,12 @@ export const useChat = (conversationId, participantId) => {
   // Mark messages as read
   const markAsRead = useCallback(async () => {
     if (!conversationId) return;
-    
+
     try {
       await chatAPI.markAsRead(conversationId);
       // Update local state
       setMessages(prev => prev.map(msg => ({ ...msg, isRead: true })));
-      setConversations(prev => 
+      setConversations(prev =>
         prev.map(conv =>
           conv.conversationId === conversationId
             ? { ...conv, unreadCount: 0 }
@@ -223,11 +223,11 @@ export const useChat = (conversationId, participantId) => {
   // Update conversation settings
   const updateConversationSettings = useCallback(async (settings) => {
     if (!conversationId) return;
-    
+
     try {
       setError(null);
       await chatAPI.updateSettings(conversationId, settings);
-      
+
       // Update local state
       setConversations(prev =>
         prev.map(conv =>
@@ -237,7 +237,7 @@ export const useChat = (conversationId, participantId) => {
         )
       );
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to update settings';
+      const errorMessage = err.response?.data?.message || err.message || "We couldn't save that setting. Please try again.";
       console.error('Error updating conversation settings:', errorMessage);
       setError(errorMessage);
     }
@@ -248,10 +248,10 @@ export const useChat = (conversationId, participantId) => {
     // New message received - centralized duplicate prevention
     const onNewMessage = (data) => {
       if (!data?.message || !data?.conversation) return;
-      
+
       const incomingConvId = data.conversation.conversationId;
       const messageId = data.message._id?.toString() || data.message.id?.toString();
-      
+
       // If this conversation is currently open, add message to messages array
       if (conversationId && incomingConvId === conversationId) {
         // Centralized duplicate prevention using Set
@@ -261,17 +261,17 @@ export const useChat = (conversationId, participantId) => {
             const msgId = msg._id?.toString() || msg.id?.toString();
             if (msgId) messageMap.set(msgId, msg);
           });
-          
+
           // Add new message if not duplicate
           if (messageId && !messageMap.has(messageId)) {
             messageMap.set(messageId, data.message);
           }
-          
+
           return Array.from(messageMap.values());
         });
         markAsRead();
       }
-      
+
       // Always update conversation list (whether chat is open or not)
       setConversations(prev => {
         if (!prev || prev.length === 0) {
@@ -281,9 +281,9 @@ export const useChat = (conversationId, participantId) => {
           }
           return prev;
         }
-        
+
         const exists = prev.some(conv => conv.conversationId === incomingConvId);
-        
+
         if (!exists) {
           // New conversation - fetch full list to get complete data
           if (fetchConversationsRef.current) {
@@ -291,15 +291,15 @@ export const useChat = (conversationId, participantId) => {
           }
           return prev;
         }
-        
+
         // Update existing conversation efficiently
         return prev.map(conv =>
           conv.conversationId === incomingConvId
-            ? { 
-                ...conv, 
-                lastMessage: data.conversation.lastMessage, 
-                unreadCount: conv.conversationId === conversationId ? (conv.unreadCount || 0) : (conv.unreadCount || 0) + 1 
-              }
+            ? {
+              ...conv,
+              lastMessage: data.conversation.lastMessage,
+              unreadCount: conv.conversationId === conversationId ? (conv.unreadCount || 0) : (conv.unreadCount || 0) + 1
+            }
             : conv
         );
       });
@@ -317,13 +317,13 @@ export const useChat = (conversationId, participantId) => {
     // Message status update (delivered/read)
     const onMessageStatus = (data) => {
       if (!data?.messageId || !data?.status) return;
-      
+
       setMessages(prev =>
         prev.map(msg => {
           const msgId = msg._id?.toString() || msg.id?.toString();
           if (msgId === data.messageId.toString()) {
-            const statusKey = data.status === 'delivered' ? 'isDelivered' : 
-                            data.status === 'read' ? 'isRead' : null;
+            const statusKey = data.status === 'delivered' ? 'isDelivered' :
+              data.status === 'read' ? 'isRead' : null;
             if (statusKey) {
               return { ...msg, [statusKey]: true };
             }
@@ -336,7 +336,7 @@ export const useChat = (conversationId, participantId) => {
     // Messages read (when other user opens chat)
     const onMessagesRead = (data) => {
       if (!data?.conversationId) return;
-      
+
       if (data.conversationId === conversationId) {
         // Mark all messages in this conversation as read
         setMessages(prev => prev.map(msg => ({

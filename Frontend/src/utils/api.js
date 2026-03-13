@@ -6,7 +6,6 @@ const api = axios.create({
   // baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : 'https://api.scholarslee.com/api',
   // baseURL: 'https://api.scholarslee.com/api', // Production
   baseURL: 'http://localhost:5000/api', // Local development
-
   timeout: 60000, // Increased from 30s to 60s for production reliability
   headers: {
     'Content-Type': 'application/json',
@@ -123,14 +122,14 @@ api.interceptors.response.use(
         // For other endpoints, return session expired message
         const errorMessage = isLoginEndpoint
           ? (data?.message || 'Invalid credentials')
-          : 'Session expired. Please login again.';
+          : 'Your session has expired. Please log in again.';
 
         return Promise.reject(new Error(errorMessage));
       }
 
       // Handle 403 Forbidden - especially for paused login
       if (status === 403) {
-        const errorMessage = data?.message || 'Access denied';
+        const errorMessage = data?.message || "You don't have permission to do this.";
         const requestUrl = error.config?.url || '';
         const currentPath = window.location.pathname;
 
@@ -155,14 +154,27 @@ api.interceptors.response.use(
         return Promise.reject(new Error(errorMessage));
       }
 
-      return Promise.reject(new Error(data.message || 'An error occurred'));
+      // Handle specific HTTP status codes with layman-friendly messages
+      let errorMessage = data.message;
+      if (!errorMessage) {
+        if (status === 400) errorMessage = 'Please check your input and try again.';
+        else if (status === 404) errorMessage = "The item you're looking for doesn't exist or was removed.";
+        else if (status === 413) errorMessage = 'The file you uploaded is too large. Please use a smaller file.';
+        else if (status === 429) errorMessage = "You're doing that too fast. Please wait a moment and try again.";
+        else if (status >= 500) errorMessage = 'Our server ran into a problem. Please try again in a moment.';
+        else errorMessage = 'Something went wrong. Please try again.';
+      }
+      return Promise.reject(new Error(errorMessage));
     }
 
     if (error.request) {
-      return Promise.reject(new Error('Network error. Please check your connection.'));
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        return Promise.reject(new Error('This is taking too long. Please check your internet and try again.'));
+      }
+      return Promise.reject(new Error("We couldn't reach the server. Please check your internet connection and try again."));
     }
 
-    return Promise.reject(new Error('An unexpected error occurred'));
+    return Promise.reject(new Error('Something went wrong on our end. Please refresh the page and try again.'));
   }
 );
 
@@ -178,6 +190,7 @@ export const profileAPI = {
   },
   mentee: {
     get: () => api.get('/mentees/profile'),
+    getById: (id) => api.get(`/mentees/profile/${id}`),
     update: (data) => api.put('/mentees/profile', data),
     create: (data) => api.post('/mentees/profile', data),
   },
@@ -231,6 +244,13 @@ export const mentorsAPI = {
   getFeatured: () => api.get('/mentees/mentors/featured'),
   getPopular: () => api.get('/mentees/mentors/popular'),
   getStudents: (id, params) => api.get(`/mentees/mentors/${id}/students`, { params }),
+  getMentorsBySpecialization: (specialization, params) => api.get(`/mentees/mentors/specialization/${specialization}`, { params }),
+  getMentorSpecializations: () => api.get('/mentees/mentors/meta/specializations'),
+  getFeaturedMentors: (params) => api.get('/mentees/mentors/meta/featured', { params }),
+  getMentorStudents: (id, params) => api.get(`/mentees/mentors/${id}/students`, { params }),
+  getFollowers: (id, params) => api.get(`/mentees/mentors/${id}/followers`, { params }),
+  follow: (id) => api.post(`/mentees/mentors/${id}/follow`),
+  unfollow: (id) => api.delete(`/mentees/mentors/${id}/follow`),
 };
 
 // Mentor Panel Mentees API (for meeting scheduling)
@@ -337,6 +357,8 @@ export const adminNotificationsAPI = {
 export const adminServicesAPI = {
   getAllServices: (params) => api.get('/admin/services', { params }),
   getServicesByCategory: () => api.get('/admin/services/by-category'),
+  approveService: (id) => api.put(`/admin/services/${id}/approve`),
+  rejectService: (id, reason) => api.put(`/admin/services/${id}/reject`, { reason }),
 };
 
 // Admin Sessions API
@@ -385,9 +407,38 @@ export const adminUsersAPI = {
   getUsersByCountry: () => api.get('/admin/users/by-country'),
 };
 
+// Admin Payouts API
+export const adminPayoutsAPI = {
+  getRequests: (params) => api.get('/admin/payouts', { params }),
+  complete: (id, data) => api.post(`/admin/payouts/${id}/complete`, data),
+  reject: (id, data) => api.post(`/admin/payouts/${id}/reject`, data),
+};
+
+// Admin Management API
+export const adminManagementAPI = {
+  create: (data) => api.post('/admin/admins', data),
+  getAll: () => api.get('/admin/admins'),
+  updateStatus: (id, status) => api.patch(`/admin/admins/${id}/status`, { status }),
+  delete: (id) => api.delete(`/admin/admins/${id}`),
+};
+
+// Admin Logs API
+export const adminLogsAPI = {
+  getAll: (params) => api.get('/admin/logs', { params }),
+};
+
 // Mentor Revenue API
 export const mentorRevenueAPI = {
   getDashboard: () => api.get('/mentors/revenue/dashboard'),
+};
+
+// Mentor Wallet API
+export const walletAPI = {
+  getData: () => api.get('/mentors/wallet/data'),
+  addPayoutMethod: (data) => api.post('/mentors/wallet/payout-methods', data),
+  updatePayoutMethod: (id, data) => api.put(`/mentors/wallet/payout-methods/${id}`, data),
+  deletePayoutMethod: (id) => api.delete(`/mentors/wallet/payout-methods/${id}`),
+  withdraw: (data) => api.post('/mentors/wallet/withdraw', data),
 };
 
 // Mentor Dashboard API

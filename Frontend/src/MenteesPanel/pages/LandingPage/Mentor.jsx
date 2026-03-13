@@ -2,6 +2,7 @@
 import { useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { mentorsAPI } from "../../../utils/api"
+import NameAvatar from "../../../shared/components/NameAvatar"
 
 // Button component
 const Button = ({ children, className = "", style = {}, ...props }) => (
@@ -40,18 +41,18 @@ export default function Mentor() {
         const mentorData = response.data.data?.mentors || response.data.data || []
         setMentors(mentorData)
       } else {
-        setError(response.data?.message || 'Failed to load mentors')
+        setError(response.data?.message || "We couldn't load mentors right now. Please try again.")
       }
     } catch (err) {
       console.error('Landing mentors load error:', err)
 
       // Provide specific error messages based on error type
       if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
-        setError('Request timed out. The server is taking longer than expected. Please try again.')
+        setError('This is taking too long. Please check your internet and try again.')
       } else if (err.message?.includes('Network')) {
-        setError('Network error. Please check your internet connection and try again.')
+        setError("We couldn't reach the server. Please check your internet connection and try again.")
       } else {
-        setError('Failed to load mentors. Please try again later.')
+        setError("We couldn't load mentors right now. Please try again later.")
       }
     } finally {
       setLoading(false)
@@ -156,7 +157,7 @@ export default function Mentor() {
             const firstName = mentor.userId?.profile?.firstName || 'Unknown'
             const lastName = mentor.userId?.profile?.lastName || ''
             const fullName = `${firstName} ${lastName}`.trim()
-            const avatar = mentor.userId?.profile?.avatar || '/a.jpg'
+            const avatar = mentor.userId?.profile?.avatar
             const location = mentor.userId?.profile?.country || 'Location not specified'
             const title = mentor.title || 'Mentor'
             const ratingValue = Number(mentor.rating ?? 0)
@@ -167,10 +168,12 @@ export default function Mentor() {
               <div key={mentor._id} className="bg-white rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-100">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
                   <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-                    <img
+                    <NameAvatar
                       src={avatar}
-                      alt={fullName}
-                      className="w-full h-full object-cover"
+                      name={fullName}
+                      size="w-full h-full"
+                      textSize="text-3xl"
+                      className="rounded-lg"
                     />
                   </div>
                   <div className="flex-1 text-center sm:text-left">
@@ -202,7 +205,11 @@ export default function Mentor() {
 
       {/* See All Button */}
       <div className="text-center">
-        <Button className="text-white px-8 py-3 font-semibold" style={{ backgroundColor: "#5D38DE" }}>
+        <Button
+          onClick={() => navigate('/mentees/mentors')}
+          className="text-white px-8 py-3 font-semibold"
+          style={{ backgroundColor: "#5D38DE" }}
+        >
           See all
         </Button>
       </div>

@@ -1,6 +1,8 @@
 "use client"
 import React, { useState, useRef, useEffect } from "react"
 import { Info, Video, Phone, MoreVertical, Pin, VolumeX, Shield, PinOff, Volume2, Archive, Trash2, ArchiveRestore, ArrowLeft } from "lucide-react"
+import MenteeProfileModal from "./MenteeProfileModal"
+import NameAvatar from "./NameAvatar"
 
 export default function ChatHeader({ chat, onBack, onVideoCall, onVoiceCall, onInfo, onPinToggle, onMuteToggle, onBlockToggle, onArchiveToggle, onClearChat }) {
   const [showDropdown, setShowDropdown] = useState(false)
@@ -9,6 +11,7 @@ export default function ChatHeader({ chat, onBack, onVideoCall, onVoiceCall, onI
   const [isBlocked, setIsBlocked] = useState(chat.isBlocked || false)
   const [isArchived, setIsArchived] = useState(chat.isArchived || false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const dropdownRef = useRef(null)
 
   // Close dropdown when clicking outside
@@ -78,7 +81,7 @@ export default function ChatHeader({ chat, onBack, onVideoCall, onVoiceCall, onI
             <ArrowLeft className="w-4 h-4 text-gray-400" />
           </button>
           <div className="relative">
-            <img src={chat.avatar || "/a.jpg"} alt={chat.name} className="w-10 h-10 md:w-12 md:h-12 rounded-full" />
+            <NameAvatar src={chat.avatar} name={chat.name} size="w-10 h-10 md:w-12 md:h-12" />
             {/* Status indicators */}
             {isPinned && (
               <div className="absolute -top-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-orange-400 rounded-full flex items-center justify-center">
@@ -93,7 +96,12 @@ export default function ChatHeader({ chat, onBack, onVideoCall, onVoiceCall, onI
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h2 className="text-white font-semibold text-base md:text-lg truncate">{chat.name}</h2>
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="text-white font-semibold text-base md:text-lg truncate hover:text-[#5D38DE] transition-colors cursor-pointer text-left"
+              >
+                {chat.name}
+              </button>
               {isBlocked && (
                 <div className="w-2 h-2 bg-red-400 rounded-full flex-shrink-0"></div>
               )}
@@ -129,7 +137,7 @@ export default function ChatHeader({ chat, onBack, onVideoCall, onVoiceCall, onI
           </button>
           {/* More Options Dropdown */}
           <div className="relative" ref={dropdownRef}>
-            <button 
+            <button
               onClick={() => setShowDropdown(!showDropdown)}
               className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-[#242424] flex items-center justify-center hover:bg-[#2a2a2a] transition-colors"
             >
@@ -222,7 +230,7 @@ export default function ChatHeader({ chat, onBack, onVideoCall, onVoiceCall, onI
                 <p className="text-gray-400 text-xs md:text-sm">This action cannot be undone</p>
               </div>
             </div>
-            
+
             <p className="text-gray-300 mb-4 md:mb-6 text-sm md:text-base">
               Are you sure you want to clear all messages in this chat? This action will permanently delete all messages and cannot be undone.
             </p>
@@ -243,6 +251,14 @@ export default function ChatHeader({ chat, onBack, onVideoCall, onVoiceCall, onI
             </div>
           </div>
         </div>
+      )}
+
+      {/* Mentee Profile Modal */}
+      {showProfileModal && (
+        <MenteeProfileModal
+          menteeId={chat.participantId}
+          onClose={() => setShowProfileModal(false)}
+        />
       )}
     </div>
   )

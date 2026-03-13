@@ -13,34 +13,34 @@ export default function ChatsSidebar({ chats = [], selectedChat, onSelectChat, c
 
   // Use real chats data (already transformed by ChatsPage) or transform conversations if needed
   // Prefer chats prop (already transformed) over conversations (raw data)
-  const realChats = chats.length > 0 
+  const realChats = chats.length > 0
     ? chats
-    : (conversations.length > 0 
+    : (conversations.length > 0
       ? conversations.map(conv => ({
-          id: conv.conversationId || conv.id,
-          conversationId: conv.conversationId || conv.id,
-          name: conv.participant ? 
-            `${conv.participant.profile?.firstName || ''} ${conv.participant.profile?.lastName || ''}`.trim() : 
-            (conv.name || 'Unknown'),
-          message: conv.lastMessage?.content || 'No messages yet',
-          avatar: conv.participant?.profile?.avatar || conv.avatar || '/u.jpeg',
-          unread: conv.unreadCount || conv.unread || 0,
-          time: conv.lastMessage?.timestamp || conv.lastMessage?.createdAt ? 
-            (conv.time || '') : '',
-          isPinned: conv.isPinned || false,
-          isMuted: conv.isMuted || false,
-          isBlocked: conv.isBlocked || false,
-          isArchived: conv.isArchived || false,
-          participantId: conv.participant?._id
-        }))
+        id: conv.conversationId || conv.id,
+        conversationId: conv.conversationId || conv.id,
+        name: conv.participant ?
+          `${conv.participant.profile?.firstName || ''} ${conv.participant.profile?.lastName || ''}`.trim() :
+          (conv.name || 'Unknown'),
+        message: conv.lastMessage?.content || 'No messages yet',
+        avatar: conv.participant?.profile?.avatar || conv.avatar,
+        unread: conv.unreadCount || conv.unread || 0,
+        time: conv.lastMessage?.timestamp || conv.lastMessage?.createdAt ?
+          (conv.time || '') : '',
+        isPinned: conv.isPinned || false,
+        isMuted: conv.isMuted || false,
+        isBlocked: conv.isBlocked || false,
+        isArchived: conv.isArchived || false,
+        participantId: conv.participant?._id
+      }))
       : [])
 
   // If user navigated with query params (?name=&avatar=), add a temporary chat at top
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
   const qName = params.get('name')
   const qAvatar = params.get('avatar')
-  const source = qName ? [{ id: 9999, name: qName, message: "Start chatting", avatar: qAvatar || "/u.jpeg", unread: 1, time: "now", isPinned: true, isMuted: false, isBlocked: false, isArchived: false }, ...realChats] : realChats
-  
+  const source = qName ? [{ id: 9999, name: qName, message: "Start chatting", avatar: qAvatar, unread: 1, time: "now", isPinned: true, isMuted: false, isBlocked: false, isArchived: false }, ...realChats] : realChats
+
   const regularChats = source.filter(chat => !chat.isArchived)
   const archivedChats = source.filter(chat => chat.isArchived)
 
@@ -85,9 +85,8 @@ export default function ChatsSidebar({ chats = [], selectedChat, onSelectChat, c
           <button
             key={filter}
             onClick={() => setActiveFilter(filter)}
-            className={`px-2 md:px-4 py-1.5 rounded-full text-xs md:text-sm whitespace-nowrap transition-colors flex-shrink-0 ${
-              activeFilter === filter ? "bg-[#5D38DE] text-white" : "bg-white border border-[#e5e7eb] text-gray-600 hover:bg-gray-50"
-            }`}
+            className={`px-2 md:px-4 py-1.5 rounded-full text-xs md:text-sm whitespace-nowrap transition-colors flex-shrink-0 ${activeFilter === filter ? "bg-[#5D38DE] text-white" : "bg-white border border-[#e5e7eb] text-gray-600 hover:bg-gray-50"
+              }`}
           >
             {filter}
           </button>
@@ -110,28 +109,28 @@ export default function ChatsSidebar({ chats = [], selectedChat, onSelectChat, c
           </div>
         ) : (
           <>
-            <ChatList chats={filteredChats} selectedChat={selectedChat} onSelectChat={(c)=> onSelectChat(c)} />
+            <ChatList chats={filteredChats} selectedChat={selectedChat} onSelectChat={(c) => onSelectChat(c)} />
             {filteredArchivedChats.length > 0 && (
-          <div className="border-t border-[#e5e7eb]">
-            <button
-              onClick={() => setShowArchived(!showArchived)}
-              className="w-full flex items-center justify-between px-4 py-3 text-gray-600 hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Archive className="w-4 h-4" />
-                <span className="text-sm font-medium">Archived Chats</span>
-                <div className="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">
-                  {filteredArchivedChats.length}
-                </div>
+              <div className="border-t border-[#e5e7eb]">
+                <button
+                  onClick={() => setShowArchived(!showArchived)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-gray-600 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Archive className="w-4 h-4" />
+                    <span className="text-sm font-medium">Archived Chats</span>
+                    <div className="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">
+                      {filteredArchivedChats.length}
+                    </div>
+                  </div>
+                  <ChevronLeft
+                    className={`w-4 h-4 transition-transform ${showArchived ? 'rotate-90' : ''}`}
+                  />
+                </button>
+                {showArchived && (
+                  <ChatList chats={filteredArchivedChats} selectedChat={selectedChat} onSelectChat={(c) => onSelectChat(c)} />
+                )}
               </div>
-              <ChevronLeft 
-                className={`w-4 h-4 transition-transform ${showArchived ? 'rotate-90' : ''}`} 
-              />
-            </button>
-            {showArchived && (
-              <ChatList chats={filteredArchivedChats} selectedChat={selectedChat} onSelectChat={(c)=> onSelectChat(c)} />
-            )}
-          </div>
             )}
           </>
         )}

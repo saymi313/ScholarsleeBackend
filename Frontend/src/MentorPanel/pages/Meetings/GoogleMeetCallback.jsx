@@ -38,7 +38,7 @@ const GoogleMeetCallback = () => {
         const response = await meetingService.processOAuthCallback(code)
 
         if (!response.success) {
-          throw new Error(response.message || "Failed to save Google Meet authorization")
+          throw new Error(response.message || "We couldn't connect Google Meet. Please try again.")
         }
 
         setStatus("success")
@@ -50,7 +50,7 @@ const GoogleMeetCallback = () => {
       } catch (err) {
         console.error("Google Meet OAuth callback error:", err)
         setStatus("error")
-        setMessage(err.message || "Failed to connect Google Meet. Please try again.")
+        setMessage(err.message || "We couldn't connect Google Meet. Please try again.")
       }
     }
 

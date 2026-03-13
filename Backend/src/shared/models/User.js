@@ -39,6 +39,13 @@ const userSchema = new mongoose.Schema({
     default: null,
     select: false
   },
+  googleMeetTokens: {
+    accessToken: { type: String, default: null, select: false },
+    refreshToken: { type: String, default: null, select: false },
+    expiryDate: { type: Number, default: null, select: false },
+    scope: { type: String, default: null, select: false },
+    tokenType: { type: String, default: null, select: false }
+  },
   stripeCustomerId: {
     type: String,
     default: null,
@@ -63,6 +70,16 @@ const userSchema = new mongoose.Schema({
       },
       message: 'Invalid role. Must be mentor, mentee, or admin (or null for Google OAuth users)'
     }
+  },
+  permissions: {
+    type: [String],
+    default: [], // Empty array means no specific permissions (or could mean full access depending on implementation)
+    // For main admin, we might want to ensure they have all permissions or handle it in code
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
   },
   isActive: {
     type: Boolean,
@@ -134,6 +151,14 @@ userSchema.pre('save', async function (next) {
   }
 
   try {
+    // Check if password is already hashed (bcrypt hashes start with $2a$, $2b$, $2x$, or $2y$)
+    // This prevents double-hashing when copying from PendingUser to User
+    const bcryptHashRegex = /^\$2[abxy]\$\d{2}\$/;
+    if (bcryptHashRegex.test(this.password)) {
+      console.log('⚠️  Password is already hashed, skipping re-hash');
+      return next();
+    }
+
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
     next();

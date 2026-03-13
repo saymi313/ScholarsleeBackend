@@ -4,6 +4,7 @@ import React, { useState } from "react"
 import { Search, ChevronLeft, Pin, VolumeX, Archive, Shield, Trash2 } from "lucide-react"
 import ChatList from "./ChatList"
 import { useAuth } from "../../../context/AuthContext"
+import NameAvatar from "./NameAvatar"
 
 export default function ChatsSidebar({ selectedChat, onSelectChat, conversations = [], loading = false, error = '', onlineUsers = [] }) {
   const { user } = useAuth()
@@ -17,25 +18,25 @@ export default function ChatsSidebar({ selectedChat, onSelectChat, conversations
   const chats = conversations.map(conv => {
     const unreadCount = Number(conv.unreadCount || 0)
     return {
-    id: conv.conversationId,
-    conversationId: conv.conversationId,
-    name: conv.participant ? 
-      `${conv.participant.profile?.firstName || ''} ${conv.participant.profile?.lastName || ''}`.trim() : 
-      'Unknown',
-    message: conv.lastMessage?.content || '',
-    avatar: conv.participant?.profile?.avatar || '/u.jpeg',
-    unread: unreadCount,
-    time: conv.lastMessage?.createdAt ? 
-      formatTime(conv.lastMessage.createdAt) : '',
-    isPinned: conv.isPinned || false,
-    isMuted: conv.isMuted || false,
-    isBlocked: conv.isBlocked || false,
-    isArchived: conv.isArchived || false,
-    isOnline: onlineUsers.includes(conv.participant?._id),
-    participant: conv.participant,
+      id: conv.conversationId,
+      conversationId: conv.conversationId,
+      name: conv.participant ?
+        `${conv.participant.profile?.firstName || ''} ${conv.participant.profile?.lastName || ''}`.trim() :
+        'Unknown',
+      message: conv.lastMessage?.content || '',
+      avatar: conv.participant?.profile?.avatar,
+      unread: unreadCount,
+      time: conv.lastMessage?.createdAt ?
+        formatTime(conv.lastMessage.createdAt) : '',
+      isPinned: conv.isPinned || false,
+      isMuted: conv.isMuted || false,
+      isBlocked: conv.isBlocked || false,
+      isArchived: conv.isArchived || false,
+      isOnline: onlineUsers.includes(conv.participant?._id),
+      participant: conv.participant,
     }
   })
-  
+
   console.log('📋 ChatsSidebar: Total conversations:', conversations.length);
   console.log('📋 ChatsSidebar: Transformed chats:', chats.length);
 
@@ -123,9 +124,8 @@ export default function ChatsSidebar({ selectedChat, onSelectChat, conversations
           <button
             key={filter}
             onClick={() => setActiveFilter(filter)}
-            className={`px-2 md:px-4 py-1.5 rounded-full text-xs md:text-sm whitespace-nowrap transition-colors flex-shrink-0 ${
-              activeFilter === filter ? "bg-[#5D38DE] text-white" : "bg-[#242424] text-gray-400 hover:bg-[#2a2a2a]"
-            }`}
+            className={`px-2 md:px-4 py-1.5 rounded-full text-xs md:text-sm whitespace-nowrap transition-colors flex-shrink-0 ${activeFilter === filter ? "bg-[#5D38DE] text-white" : "bg-[#242424] text-gray-400 hover:bg-[#2a2a2a]"
+              }`}
           >
             {filter}
           </button>
@@ -149,7 +149,7 @@ export default function ChatsSidebar({ selectedChat, onSelectChat, conversations
         ) : (
           <ChatList chats={filteredChats} selectedChat={selectedChat} onSelectChat={onSelectChat} />
         )}
-        
+
         {/* Archived Chats Section */}
         {filteredArchivedChats.length > 0 && (
           <div className="border-t border-[#2a2a2a]">
@@ -164,11 +164,11 @@ export default function ChatsSidebar({ selectedChat, onSelectChat, conversations
                   {filteredArchivedChats.length}
                 </div>
               </div>
-              <ChevronLeft 
-                className={`w-4 h-4 transition-transform ${showArchived ? 'rotate-90' : ''}`} 
+              <ChevronLeft
+                className={`w-4 h-4 transition-transform ${showArchived ? 'rotate-90' : ''}`}
               />
             </button>
-            
+
             {showArchived && (
               <ChatList chats={filteredArchivedChats} selectedChat={selectedChat} onSelectChat={onSelectChat} />
             )}
@@ -179,10 +179,10 @@ export default function ChatsSidebar({ selectedChat, onSelectChat, conversations
       {/* User Profile */}
       <div className="p-3 md:p-4 border-t border-[#2a2a2a]">
         <div className="flex items-center gap-3">
-          <img 
-            src={user?.profile?.avatar || '/a.jpg'} 
-            alt={`${user?.profile?.firstName || ''} ${user?.profile?.lastName || ''}`} 
-            className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover" 
+          <NameAvatar
+            src={user?.profile?.avatar}
+            name={`${user?.profile?.firstName || ''} ${user?.profile?.lastName || ''}`.trim() || 'Mentor'}
+            size="w-10 h-10 md:w-12 md:h-12"
           />
           <div className="min-w-0 flex-1">
             <h3 className="text-white font-medium text-sm md:text-base truncate">

@@ -9,7 +9,8 @@ export default function SettingsPage() {
   const [featureFlags, setFeatureFlags] = useState({
     enableMentorVerification: true,
     enablePayouts: true,
-    autoApproveFeedbacks: false
+    autoApproveFeedbacks: false,
+    autoApproveServices: false
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -36,14 +37,15 @@ export default function SettingsPage() {
         setFeatureFlags({
           enableMentorVerification: settings.featureFlags?.enableMentorVerification ?? true,
           enablePayouts: settings.featureFlags?.enablePayouts ?? true,
-          autoApproveFeedbacks: settings.featureFlags?.autoApproveFeedbacks ?? false
+          autoApproveFeedbacks: settings.featureFlags?.autoApproveFeedbacks ?? false,
+          autoApproveServices: settings.featureFlags?.autoApproveServices ?? false
         })
       } else {
-        setError(response.data?.message || "Failed to load settings")
+        setError(response.data?.message || "We couldn't load settings. Please refresh the page.")
       }
     } catch (err) {
       console.error("Error fetching settings:", err)
-      setError(err.response?.data?.message || err.message || "Failed to load settings")
+      setError(err.response?.data?.message || err.message || "We couldn't load settings. Please refresh the page.")
     } finally {
       setLoading(false)
     }
@@ -61,7 +63,7 @@ export default function SettingsPage() {
       setSaving(true)
       setError("")
       setSuccess("")
-      
+
       const response = await adminSettingsAPI.updateSettings({
         featureFlags: featureFlags
       })
@@ -73,15 +75,16 @@ export default function SettingsPage() {
         setFeatureFlags({
           enableMentorVerification: updatedSettings.featureFlags?.enableMentorVerification ?? true,
           enablePayouts: updatedSettings.featureFlags?.enablePayouts ?? true,
-          autoApproveFeedbacks: updatedSettings.featureFlags?.autoApproveFeedbacks ?? false
+          autoApproveFeedbacks: updatedSettings.featureFlags?.autoApproveFeedbacks ?? false,
+          autoApproveServices: updatedSettings.featureFlags?.autoApproveServices ?? false
         })
         setTimeout(() => setSuccess(""), 5000)
       } else {
-        setError(response.data?.message || "Failed to update settings")
+        setError(response.data?.message || "We couldn't save your settings. Please try again.")
       }
     } catch (err) {
       console.error("Error updating settings:", err)
-      setError(err.response?.data?.message || err.message || "Failed to update settings")
+      setError(err.response?.data?.message || err.message || "We couldn't save your settings. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -90,9 +93,9 @@ export default function SettingsPage() {
   const handleAddCategory = async (e) => {
     e.preventDefault()
     setCategoryError("")
-    
+
     const name = categoryInput.trim()
-    
+
     if (!name) {
       setCategoryError("Category is required.")
       return
@@ -113,9 +116,9 @@ export default function SettingsPage() {
     try {
       setAddingCategory(true)
       setCategoryError("")
-      
+
       const response = await adminSettingsAPI.addCategory(name)
-      
+
       if (response.data?.success) {
         const updatedSettings = response.data.data.settings
         setCategories(updatedSettings.categories || [])
@@ -123,11 +126,11 @@ export default function SettingsPage() {
         setSuccess("Category added successfully")
         setTimeout(() => setSuccess(""), 3000)
       } else {
-        setCategoryError(response.data?.message || "Failed to add category")
+        setCategoryError(response.data?.message || "We couldn't add this category. Please try again.")
       }
     } catch (err) {
       console.error("Error adding category:", err)
-      setCategoryError(err.response?.data?.message || err.message || "Failed to add category")
+      setCategoryError(err.response?.data?.message || err.message || "We couldn't add this category. Please try again.")
     } finally {
       setAddingCategory(false)
     }
@@ -136,20 +139,20 @@ export default function SettingsPage() {
   const handleRemoveCategory = async (category) => {
     try {
       setRemovingCategory(category)
-      
+
       const response = await adminSettingsAPI.removeCategory(category)
-      
+
       if (response.data?.success) {
         const updatedSettings = response.data.data.settings
         setCategories(updatedSettings.categories || [])
         setSuccess("Category removed successfully")
         setTimeout(() => setSuccess(""), 3000)
       } else {
-        setError(response.data?.message || "Failed to remove category")
+        setError(response.data?.message || "We couldn't remove this category. Please try again.")
       }
     } catch (err) {
       console.error("Error removing category:", err)
-      setError(err.response?.data?.message || err.message || "Failed to remove category")
+      setError(err.response?.data?.message || err.message || "We couldn't remove this category. Please try again.")
     } finally {
       setRemovingCategory(null)
     }
@@ -243,6 +246,15 @@ export default function SettingsPage() {
               type="checkbox"
               checked={featureFlags.autoApproveFeedbacks}
               onChange={(e) => handleFlagChange('autoApproveFeedbacks', e.target.checked)}
+              className="accent-[#5D38DE]"
+            />
+          </label>
+          <label className="flex items-center justify-between bg-white/5 rounded px-3 py-2">
+            <span className="text-sm">Auto-approve Services</span>
+            <input
+              type="checkbox"
+              checked={featureFlags.autoApproveServices}
+              onChange={(e) => handleFlagChange('autoApproveServices', e.target.checked)}
               className="accent-[#5D38DE]"
             />
           </label>

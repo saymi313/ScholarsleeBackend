@@ -12,8 +12,8 @@ const { emitToUser } = require('../../shared/config/socket');
 // Initialize Google Meet service
 const googleMeetService = new GoogleMeetService();
 
-const ensureGoogleClientInitialized = () => {
-  const credentials = getGoogleOAuthCredentials();
+const ensureGoogleClientInitialized = async (userId) => {
+  const credentials = await getGoogleOAuthCredentials(userId);
 
   if (!credentials.clientId || !credentials.clientSecret) {
     throw new Error('Google OAuth client credentials are not configured.');
@@ -38,7 +38,7 @@ const initializeGoogleClient = async (req, res) => {
     let credentialsToUse = providedCredentials;
 
     if (!credentialsToUse || !credentialsToUse.clientId || !credentialsToUse.clientSecret) {
-      credentialsToUse = getGoogleOAuthCredentials();
+      credentialsToUse = await getGoogleOAuthCredentials(req.user.id);
     }
 
     if (!credentialsToUse.clientId || !credentialsToUse.clientSecret) {
@@ -66,7 +66,7 @@ const createMeeting = async (req, res) => {
     let credentials;
 
     try {
-      credentials = ensureGoogleClientInitialized();
+      credentials = await ensureGoogleClientInitialized(req.user.id);
     } catch (initError) {
       return sendErrorResponse(res, initError.message, 500);
     }
@@ -213,7 +213,7 @@ const updateMeeting = async (req, res) => {
     let credentials;
 
     try {
-      credentials = ensureGoogleClientInitialized();
+      credentials = await ensureGoogleClientInitialized(req.user.id);
     } catch (initError) {
       return sendErrorResponse(res, initError.message, 500);
     }
@@ -266,7 +266,7 @@ const deleteMeeting = async (req, res) => {
     let credentials;
 
     try {
-      credentials = ensureGoogleClientInitialized();
+      credentials = await ensureGoogleClientInitialized(req.user.id);
     } catch (initError) {
       return sendErrorResponse(res, initError.message, 500);
     }
@@ -300,7 +300,7 @@ const getMeeting = async (req, res) => {
     let credentials;
 
     try {
-      credentials = ensureGoogleClientInitialized();
+      credentials = await ensureGoogleClientInitialized(req.user.id);
     } catch (initError) {
       return sendErrorResponse(res, initError.message, 500);
     }
@@ -335,7 +335,7 @@ const getMeeting = async (req, res) => {
 const getAuthUrl = async (req, res) => {
   try {
     try {
-      ensureGoogleClientInitialized();
+      await ensureGoogleClientInitialized(req.user.id);
     } catch (initError) {
       return sendErrorResponse(res, initError.message, 500);
     }
@@ -367,7 +367,7 @@ const getTokens = async (req, res) => {
 
     let baseCredentials;
     try {
-      baseCredentials = ensureGoogleClientInitialized();
+      baseCredentials = await ensureGoogleClientInitialized(req.user.id);
     } catch (initError) {
       return sendErrorResponse(res, initError.message, 500);
     }
@@ -380,7 +380,7 @@ const getTokens = async (req, res) => {
 
     const tokens = result.tokens || {};
 
-    persistTokens(tokens);
+    await persistTokens(tokens, req.user.id);
     resetCachedCredentials();
 
     const initResult = googleMeetService.initializeClient({

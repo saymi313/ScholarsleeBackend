@@ -95,11 +95,11 @@ export default function NotificationsPage() {
         // Clear success message after 5 seconds
         setTimeout(() => setSuccessMessage(""), 5000)
       } else {
-        setFormError(response.data?.message || "Failed to send notification")
+        setFormError(response.data?.message || "We couldn't send the notification. Please try again.")
       }
     } catch (error) {
       console.error("Error sending notification:", error)
-      setFormError(error.response?.data?.message || error.message || "Failed to send notification")
+      setFormError(error.response?.data?.message || error.message || "We couldn't send the notification. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -123,7 +123,7 @@ export default function NotificationsPage() {
         <input name="subject" maxLength={120} className="bg-[#121214] border border-white/10 rounded px-3 py-2 text-sm md:col-span-2" placeholder="Subject" required />
         <textarea name="message" maxLength={1000} className="bg-[#121214] border border-white/10 rounded px-3 py-2 text-sm md:col-span-4" rows={3} placeholder="Message..." required />
         <div className="md:col-span-4 flex justify-end">
-          <button 
+          <button
             type="submit"
             disabled={loading}
             className="rounded-md bg-[#5D38DE] px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"

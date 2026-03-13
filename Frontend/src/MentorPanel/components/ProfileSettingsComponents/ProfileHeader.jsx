@@ -127,7 +127,7 @@ const ProfileHeader = () => {
         }
       } catch (error) {
         console.error('Avatar upload failed:', error)
-        setNotification({ show: true, type: 'error', message: 'Failed to upload photo' })
+        setNotification({ show: true, type: 'error', message: "We couldn't upload your photo. Please use a JPG or PNG under 5MB." })
       }
     }
   }
@@ -175,7 +175,7 @@ const ProfileHeader = () => {
 
     } catch (error) {
       console.error('Error saving profile:', error)
-      setNotification({ show: true, type: 'error', message: 'Failed to update profile' })
+      setNotification({ show: true, type: 'error', message: "We couldn't save your changes. Please try again." })
     } finally {
       setLoading(false)
     }

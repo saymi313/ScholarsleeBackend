@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, Star, DollarSign } from 'lucide-react';
 import { servicesAPI } from '../../../utils/api';
+import { useToast } from '../../../context/ToastContext';
 
 const ServiceList = () => {
   const navigate = useNavigate();
+  const { showError, showSuccess } = useToast();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,11 +29,11 @@ const ServiceList = () => {
       if (response.data.success) {
         setServices(response.data.data.services || []);
       } else {
-        setError(response.data.message || 'Failed to load services');
+        setError(response.data.message || "We couldn't load your services. Please refresh the page.");
       }
     } catch (error) {
       console.error('Error loading services:', error);
-      setError('Failed to load services');
+      setError("We couldn't load your services. Please refresh the page.");
     } finally {
       setLoading(false);
     }
@@ -54,10 +56,10 @@ const ServiceList = () => {
         if (isSuccess) {
           console.log('✅ Delete successful, updating UI');
           setServices(services.filter(service => service._id !== serviceId));
-          alert('Service deleted successfully!');
+          showSuccess('Service deleted successfully!');
         } else {
           console.log('❌ Delete failed:', response.data);
-          alert(response.data?.message || 'Failed to delete service');
+          showError(response.data?.message || "We couldn't delete this service. Please try again.");
         }
       } catch (error) {
         console.error('❌ Error deleting service:', error);
@@ -66,7 +68,7 @@ const ServiceList = () => {
           response: error.response?.data,
           status: error.response?.status
         });
-        alert('Failed to delete service');
+        showError("We couldn't delete this service. Please try again.");
       }
     }
   };

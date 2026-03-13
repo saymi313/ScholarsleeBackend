@@ -55,46 +55,17 @@ const register = async (req, res) => {
     });
     console.log('✅ Pending user created:', pendingUser._id);
 
-    // Send verification email
-    console.log('📧 Attempting to send verification email to:', email);
-    const emailStartTime = Date.now();
-    try {
-      const emailResult = await emailService.sendVerificationEmail(email, verificationOTP);
-      const emailDuration = ((Date.now() - emailStartTime) / 1000).toFixed(2);
-
-      if (emailResult.success) {
-        console.log('\n' + '='.repeat(60));
-        console.log('🎉 OTP SENT SUCCESSFULLY! 🎉');
-        console.log('='.repeat(60));
-        console.log(`📧 To: ${email}`);
-        console.log(`🔐 OTP: ${verificationOTP}`);
-        console.log(`⏱️  Duration: ${emailDuration}s`);
-        console.log(`📬 Message ID: ${emailResult.messageId}`);
-        console.log('='.repeat(60) + '\n');
-
-        // Check if email was accepted by server
-        if (emailResult.rejected && emailResult.rejected.length > 0) {
-          console.warn('⚠️  Email was rejected by server:', emailResult.rejected);
+    // Send verification email in background (non-blocking for user response)
+    console.log('📧 Triggering verification email to:', email);
+    emailService.sendVerificationEmail(email, verificationOTP)
+      .then(emailResult => {
+        if (emailResult.success) {
+          console.log(`✅ Background OTP sent for ${email}`);
+        } else {
+          console.error(`❌ Background OTP failed for ${email}:`, emailResult.error);
         }
-      } else {
-        console.error('\n' + '='.repeat(60));
-        console.error('❌ OTP EMAIL FAILED TO SEND');
-        console.error('='.repeat(60));
-        console.error(`📧 To: ${email}`);
-        console.error(`⏱️  Duration: ${emailDuration}s`);
-        console.error(`❌ Error: ${emailResult.error}`);
-        console.error('📋 Error Code:', emailResult.errorCode);
-        console.error('='.repeat(60) + '\n');
-
-        // Still allow registration to complete - user can use "Resend OTP"
-        console.log('⚠️  User can request OTP resend later');
-      }
-    } catch (emailError) {
-      const emailDuration = ((Date.now() - emailStartTime) / 1000).toFixed(2);
-      console.error(`❌ Failed to send verification email after ${emailDuration}s:`, emailError.message);
-      console.error('📋 Full error:', emailError);
-      // Pending user is created but email failed. They can use "Resend OTP".
-    }
+      })
+      .catch(err => console.error(`❌ Background OTP error for ${email}:`, err));
 
     // Do NOT return token. User must verify email first.
     console.log('✅ Registration complete, sending response');
@@ -202,6 +173,7 @@ const getMe = async (req, res) => {
           email: user.email,
           role: user.role,
           profile: user.profile,
+          permissions: user.permissions, // Include permissions for admins
           isActive: user.isActive,
           isVerified: user.isVerified
         }
@@ -244,6 +216,7 @@ const verifyEmail = async (req, res) => {
       console.log('✅ Found pending user, creating actual user...');
 
       // Create actual user from pending user
+      // Password is already hashed in PendingUser - User model will detect and skip re-hashing
       const user = await User.create({
         email: pendingUser.email,
         password: pendingUser.password,
@@ -349,32 +322,14 @@ const resendVerificationEmail = async (req, res) => {
       pendingUser.verificationOTPExpires = verificationOTPExpires;
       await pendingUser.save();
 
-      // Send email
-      try {
-        const emailResult = await emailService.sendVerificationEmail(pendingUser.email, verificationOTP);
+      // Send email in background
+      emailService.sendVerificationEmail(pendingUser.email, verificationOTP)
+        .then(emailResult => {
+          if (emailResult.success) console.log(`✅ Resend OTP success for ${pendingUser.email}`);
+        })
+        .catch(err => console.error(`❌ Resend OTP error for ${pendingUser.email}:`, err));
 
-        if (emailResult.success) {
-          console.log('\n' + '='.repeat(60));
-          console.log('🔄 OTP RESENT SUCCESSFULLY! 🔄');
-          console.log('='.repeat(60));
-          console.log(`📧 To: ${pendingUser.email}`);
-          console.log(`🔐 OTP: ${verificationOTP}`);
-          console.log(`📬 Message ID: ${emailResult.messageId}`);
-          console.log('='.repeat(60) + '\n');
-          return sendSuccessResponse(res, 'Verification code sent successfully. Please check your email and spam/junk folder.');
-        } else {
-          console.error('\n' + '='.repeat(60));
-          console.error('❌ OTP RESEND FAILED');
-          console.error('='.repeat(60));
-          console.error(`📧 To: ${pendingUser.email}`);
-          console.error(`❌ Error: ${emailResult.error}`);
-          console.error('='.repeat(60) + '\n');
-          return sendErrorResponse(res, 'Failed to send verification email. Please try again.', 500);
-        }
-      } catch (emailError) {
-        console.error('❌ Failed to send verification email:', emailError);
-        return sendErrorResponse(res, 'Failed to send verification email. Please try again.', 500);
-      }
+      return sendSuccessResponse(res, 'Verification code sent successfully. Please check your email and spam/junk folder.');
     }
 
     // Fallback: Check User collection (backward compatibility)
@@ -400,33 +355,14 @@ const resendVerificationEmail = async (req, res) => {
     user.verificationOTPExpires = verificationOTPExpires;
     await user.save();
 
-    // Send email
-    try {
-      const emailResult = await emailService.sendVerificationEmail(user.email, verificationOTP);
+    // Send email in background
+    emailService.sendVerificationEmail(user.email, verificationOTP)
+      .then(emailResult => {
+        if (emailResult.success) console.log(`✅ Resend OTP success for ${user.email}`);
+      })
+      .catch(err => console.error(`❌ Resend OTP error for ${user.email}:`, err));
 
-      if (emailResult.success) {
-        console.log('\n' + '='.repeat(60));
-        console.log('🔄 OTP RESENT SUCCESSFULLY! 🔄');
-        console.log('='.repeat(60));
-        console.log(`📧 To: ${user.email}`);
-        console.log(`🔐 OTP: ${verificationOTP}`);
-        console.log(`📬 Message ID: ${emailResult.messageId}`);
-        console.log('='.repeat(60) + '\n');
-        return sendSuccessResponse(res, 'Verification code sent successfully. Please check your email and spam/junk folder.');
-      } else {
-        console.error('\n' + '='.repeat(60));
-        console.error('❌ OTP RESEND FAILED');
-        console.error('='.repeat(60));
-        console.error(`📧 To: ${user.email}`);
-        console.error(`❌ Error: ${emailResult.error}`);
-        console.error('='.repeat(60) + '\n');
-        return sendErrorResponse(res, 'Failed to send verification email. Please try again.', 500);
-      }
-    } catch (emailError) {
-      console.error('❌ Failed to send verification email:', emailError);
-      return sendErrorResponse(res, 'Failed to send verification email. Please try again.', 500);
-    }
-
+    return sendSuccessResponse(res, 'Verification code sent successfully. Please check your email and spam/junk folder.');
   } catch (error) {
     console.error('❌ Resend verification error:', error);
     return sendErrorResponse(res, 'Failed to resend verification code', 500);

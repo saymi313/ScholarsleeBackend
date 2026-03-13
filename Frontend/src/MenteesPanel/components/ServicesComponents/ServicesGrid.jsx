@@ -89,18 +89,18 @@ export default function ServicesGrid({ searchQuery = "", filters = {} }) {
           total: paginationInfo.total || servicesList.length
         })
       } else {
-        setError(response.data?.message || "Failed to load services")
+        setError(response.data?.message || "We couldn't load services right now. Please try again.")
       }
     } catch (error) {
       console.error("Error loading services:", error)
 
       // Provide specific error messages based on error type
       if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        setError("Request timed out. The server is taking longer than expected. Please try again.")
+        setError("This is taking too long. Please check your internet and try again.")
       } else if (error.message?.includes('Network')) {
-        setError("Network error. Please check your internet connection and try again.")
+        setError("We couldn't reach the server. Please check your internet connection and try again.")
       } else {
-        setError("Failed to load services. Please try again later.")
+        setError("We couldn't load services right now. Please try again later.")
       }
     } finally {
       setLoading(false)

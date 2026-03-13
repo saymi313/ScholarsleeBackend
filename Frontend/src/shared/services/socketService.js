@@ -21,7 +21,8 @@ class SocketService {
 
     console.log('Creating new socket connection...');
     // const serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-    const serverUrl = 'https://api.scholarslee.com';
+    // const serverUrl = 'https://api.scholarslee.com';
+    const serverUrl = 'http://localhost:5000';
 
     this.socket = io(serverUrl, {
       auth: {

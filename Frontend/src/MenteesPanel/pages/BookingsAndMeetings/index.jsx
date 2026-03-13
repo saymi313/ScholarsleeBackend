@@ -4,8 +4,15 @@ import { Calendar, Clock, User, Video, Play, CheckCircle, AlertCircle, X, Eye, D
 import Header from '../../components/Shared/Header';
 import Footer from '../../components/Shared/Footer';
 import { bookingAPI, meetingAPI } from '../../../utils/api';
+import { useToast } from '../../../context/ToastContext';
+import menteeMeetingService from './menteeMeetingService';
+import MenteeMeetingSchedulingModal from '../../components/MeetingSchedulingModal';
+import MeetingConfirmationModal from '../../../MentorPanel/components/MeetingsComponents/MeetingConfirmationModal';
+import MeetingLoader from '../../../MentorPanel/components/MeetingsComponents/MeetingLoader';
+import MeetingLinkDisplay from '../../../MentorPanel/components/MeetingsComponents/MeetingLinkDisplay';
 
 const BookingsAndMeetingsPage = () => {
+  const { showError } = useToast();
   const location = useLocation();
   // Check URL params for tab, or default based on pathname
   const urlParams = new URLSearchParams(location.search);
@@ -20,6 +27,17 @@ const BookingsAndMeetingsPage = () => {
   const [error, setError] = useState('');
   const [bookingFilter, setBookingFilter] = useState('all');
   const [meetingFilter, setMeetingFilter] = useState('all');
+
+  // Meeting Scheduling States
+  const [showSchedulingModal, setShowSchedulingModal] = useState(false);
+  const [selectedBookingForMeeting, setSelectedBookingForMeeting] = useState(null);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [meetingDetails, setMeetingDetails] = useState(null);
+  const [showLoader, setShowLoader] = useState(false);
+  const [loaderStep, setLoaderStep] = useState(1);
+  const [generatedMeetingLink, setGeneratedMeetingLink] = useState('');
+  const [showLinkDisplay, setShowLinkDisplay] = useState(false);
+  const [calendarKey, setCalendarKey] = useState(0);
 
   // Update active tab when URL param changes
   useEffect(() => {
@@ -48,16 +66,16 @@ const BookingsAndMeetingsPage = () => {
       if (response.data && response.data.success) {
         setBookings(response.data.data.bookings || []);
       } else {
-        setError(response.data?.message || 'Failed to load bookings');
+        setError(response.data?.message || "We couldn't load your bookings. Please try again.");
       }
     } catch (error) {
       console.error('Error loading bookings:', error);
 
       // Check if it's an authentication error
       if (error.response?.status === 401 || error.response?.status === 403) {
-        setError('Please login to view your bookings');
+        setError('Please log in first to see your bookings. It only takes a moment!');
       } else {
-        setError('Failed to load bookings. Please login first or register your account.');
+        setError("You need to be logged in to view your bookings. Please log in or create an account to continue.");
       }
     } finally {
       setLoading(false);
@@ -77,7 +95,7 @@ const BookingsAndMeetingsPage = () => {
 
       // Check if it's an authentication error
       if (error.response?.status === 401 || error.response?.status === 403) {
-        setError('Please login to view your meetings');
+        setError('Please log in first to see your meetings. It only takes a moment!');
       }
     }
   };
@@ -101,7 +119,7 @@ const BookingsAndMeetingsPage = () => {
       }
     } catch (error) {
       console.error('Error cancelling booking:', error);
-      alert('Failed to cancel booking');
+      showError("We couldn't cancel this booking. Please try again.");
     }
   };
 
@@ -116,8 +134,134 @@ const BookingsAndMeetingsPage = () => {
       }
     } catch (error) {
       console.error('Error joining meeting:', error);
-      alert('Failed to join meeting');
+      showError("We couldn't join the meeting. Please try again.");
     }
+  };
+
+  const handleConnectGoogle = async () => {
+    try {
+      await menteeMeetingService.beginOAuthFlow();
+    } catch (error) {
+      console.error('Failed to initiate Google authorization:', error);
+      showError(error.message || "We couldn't connect to Google. Please try again.");
+    }
+  };
+
+  const validateMeetingDetails = (details) => {
+    const errors = [];
+    if (!details.topic || details.topic.trim() === '') errors.push('Meeting topic is required');
+    if (!details.date) errors.push('Date is required');
+    if (!details.time) errors.push('Time is required');
+    return errors;
+  };
+
+  const formatErrorMessage = (error) => {
+    const message = error.message || error?.response?.data?.message || String(error);
+    
+    // Map backend error messages to user-friendly versions
+    const errorMap = {
+      'Scheduled date must be in the future': 'Please select a date and time in the future',
+      'Cannot create meeting': 'Meeting could not be created. Please check the booking status or try again',
+      'Access denied': 'You do not have permission to create this meeting',
+      'Valid booking not found': 'The booking is no longer valid. Please refresh and try again',
+      'Calendar access is not authorized': 'Your Google Calendar is not connected. Please click "Connect Calendar" and try again',
+      'Google Calendar access is not authorized yet': 'Your Google Calendar is not yet authorized. Please connect to Google Calendar first',
+      'Authorization code is required': 'Google authorization failed. Please try connecting to Google Calendar again',
+      'We couldn\'t complete Google sign-in': 'Google sign-in failed. Please try again or reconnect your calendar',
+      'check if you have connected your calendar': 'Please ensure your Google Calendar is connected',
+    };
+
+    // Check for matching error messages
+    for (const [key, value] of Object.entries(errorMap)) {
+      if (message.includes(key) || message.toLowerCase().includes(key.toLowerCase())) {
+        return value;
+      }
+    }
+
+    // For specific HTTP errors
+    if (message.includes('400')) return 'Invalid meeting details. Please check your input and try again';
+    if (message.includes('401')) return 'Your session has expired. Please log in again';
+    if (message.includes('403')) return 'You do not have permission to create this meeting';
+    if (message.includes('404')) return 'The booking could not be found. Please refresh the page';
+    if (message.includes('409')) return 'A meeting has already been scheduled for this booking';
+    if (message.includes('428')) return 'Please connect your Google Calendar first before scheduling a meeting';
+    if (message.includes('500')) return 'Server error occurred. Please try again later';
+    if (message.includes('Network')) return 'Network error. Please check your connection and try again';
+
+    // Default message
+    return message || 'An error occurred while creating the meeting. Please try again';
+  };
+
+  const handleScheduleMeetingRequest = (booking) => {
+    setSelectedBookingForMeeting(booking);
+    setShowSchedulingModal(true);
+  };
+
+  const handleSchedulingSubmit = (details) => {
+    setMeetingDetails({
+      ...details,
+      bookingId: selectedBookingForMeeting?._id,
+      mentorId: selectedBookingForMeeting?.mentorId?._id
+    });
+    setShowSchedulingModal(false);
+    setShowConfirmationModal(true);
+  };
+
+  const generateMeetingLink = async (details) => {
+    try {
+      setShowLoader(true);
+      setLoaderStep(1);
+
+      const validationErrors = validateMeetingDetails(details);
+      if (validationErrors.length > 0) {
+        setShowLoader(false);
+        showError(validationErrors.join(' • '));
+        return;
+      }
+
+      const stepInterval = setInterval(() => {
+        setLoaderStep(prev => prev < 4 ? prev + 1 : prev);
+      }, 800);
+
+      const result = await menteeMeetingService.generateMeetingLink(details);
+
+      clearInterval(stepInterval);
+      setLoaderStep(4);
+
+      if (result.success) {
+        setGeneratedMeetingLink(result.meetingLink);
+        setShowLoader(false);
+        setShowLinkDisplay(true);
+        setCalendarKey(prev => prev + 1);
+        loadMeetings(); // Refresh the list
+      } else {
+        throw new Error(result.error || "We couldn't generate the meeting link.");
+      }
+    } catch (error) {
+      console.error('Error generating meeting link:', error);
+      setShowLoader(false);
+      
+      const userFriendlyError = formatErrorMessage(error);
+      showError(userFriendlyError);
+    }
+  };
+
+  const handleConfirmationConfirm = () => {
+    setShowConfirmationModal(false);
+    generateMeetingLink(meetingDetails);
+  };
+
+  const handleConfirmationCancel = () => {
+    setShowConfirmationModal(false);
+    setShowSchedulingModal(true);
+  };
+
+  const handleLinkDisplayClose = () => {
+    setShowLinkDisplay(false);
+    setMeetingDetails(null);
+    setGeneratedMeetingLink("");
+    setLoaderStep(1);
+    setSelectedBookingForMeeting(null);
   };
 
   const getStatusColor = (status, type = 'booking') => {
@@ -197,11 +341,32 @@ const BookingsAndMeetingsPage = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Bookings & Meetings</h1>
-          <p className="mt-2 text-gray-600">
-            Manage your service bookings and join scheduled meetings
-          </p>
+        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Bookings & Meetings</h1>
+            <p className="mt-2 text-gray-600">
+              Manage your service bookings and join scheduled meetings
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+             <button
+                onClick={handleConnectGoogle}
+                className="inline-flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 font-medium transition-colors"
+              >
+                <img src="https://www.google.com/images/branding/googleg/1x/googleg_standard_color_128dp.png" alt="Google" className="w-5 h-5 mr-3" />
+                Connect Calendar
+              </button>
+             <button
+                onClick={() => {
+                  window.location.href = '/mentees/services';
+                }}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 font-medium transition-colors"
+                title="Browse Services to Book"
+              >
+                <Calendar className="w-5 h-5 mr-2" />
+                Book a Service
+              </button>
+          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -238,7 +403,7 @@ const BookingsAndMeetingsPage = () => {
             <div className="flex items-start">
               <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-3" />
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-red-800">Authentication Required</h3>
+                <h3 className="text-sm font-medium text-red-800">Please Log In First</h3>
                 <p className="mt-1 text-sm text-red-700">{error}</p>
                 <div className="mt-4 flex gap-3">
                   <a
@@ -353,25 +518,47 @@ const BookingsAndMeetingsPage = () => {
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2 mt-2 sm:mt-0 sm:ml-4 w-full sm:w-auto justify-end">
-                          <button
-                            onClick={() => {/* View booking details */ }}
-                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-
-                          {(booking.status === 'pending' || booking.status === 'confirmed') && (
+                          <div className="flex items-center gap-2 mt-4 sm:mt-0 sm:ml-4 w-full sm:w-auto justify-end">
+                            {booking.status === 'confirmed' && booking.mentorId && !booking.meetingLink && (
+                              <button
+                                onClick={() => handleScheduleMeetingRequest(booking)}
+                                className="inline-flex items-center px-4 py-2 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg transition-colors font-medium border border-green-200 shadow-sm"
+                                title="Create Google Meet for this booking"
+                              >
+                                <Video className="w-4 h-4 mr-2" />
+                                Create Meeting
+                              </button>
+                            )}
+                            {booking.meetingLink && (
+                              <a
+                                href={booking.meetingLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors font-medium border border-blue-200 shadow-sm"
+                                title="Join existing meeting"
+                              >
+                                <Video className="w-4 h-4 mr-2" />
+                                Join Meeting
+                              </a>
+                            )}
                             <button
-                              onClick={() => cancelBooking(booking._id)}
-                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Cancel Booking"
+                              onClick={() => {/* View booking details */}}
+                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors border border-transparent shadow-sm"
+                              title="View Details"
                             >
-                              <X className="w-4 h-4" />
+                              <Eye className="w-4 h-4" />
                             </button>
-                          )}
-                        </div>
+                            
+                            {(booking.status === 'pending' || booking.status === 'confirmed') && !booking.meetingLink && (
+                              <button
+                                onClick={() => cancelBooking(booking._id)}
+                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent shadow-sm"
+                                title="Cancel Booking"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                       </div>
                     </div>
                   ))}
@@ -500,6 +687,38 @@ const BookingsAndMeetingsPage = () => {
       </div>
 
       <Footer />
+
+      {/* Meeting Scheduling Modals */}
+      <MenteeMeetingSchedulingModal
+        isOpen={showSchedulingModal}
+        onClose={() => setShowSchedulingModal(false)}
+        onSchedule={handleSchedulingSubmit}
+        booking={selectedBookingForMeeting}
+      />
+
+      <MeetingConfirmationModal
+        isOpen={showConfirmationModal}
+        meetingDetails={meetingDetails}
+        onConfirm={handleConfirmationConfirm}
+        onCancel={handleConfirmationCancel}
+      />
+
+      <MeetingLoader
+        isVisible={showLoader}
+        currentStep={loaderStep}
+        totalSteps={4}
+      />
+
+      <MeetingLinkDisplay
+        isVisible={showLinkDisplay}
+        meetingDetails={meetingDetails}
+        meetingLink={generatedMeetingLink}
+        onClose={handleLinkDisplayClose}
+        onScheduleAnother={() => {
+          handleLinkDisplayClose();
+          setShowSchedulingModal(true);
+        }}
+      />
     </div>
   );
 };

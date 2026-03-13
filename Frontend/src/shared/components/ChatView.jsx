@@ -16,9 +16,9 @@ import { chatAPI } from "../api/chatAPI"
  * @param {React.Component} props.DeliveryStatusModal - DeliveryStatusModal component
  * @param {React.Component} props.FeatureComingSoonModal - FeatureComingSoonModal component
  */
-export default function ChatView({ 
-  chat, 
-  onBack, 
+export default function ChatView({
+  chat,
+  onBack,
   onUpdateChat,
   theme = 'light',
   ChatHeader,
@@ -50,8 +50,8 @@ export default function ChatView({
     conversationId && conversationId.split('_').find(id => id && id !== currentUserId)
   )
 
-  const { 
-    messages: chatMessages, 
+  const {
+    messages: chatMessages,
     loading: messagesLoading,
     sendMessage: sendChatMessage,
     fetchMessages,
@@ -109,12 +109,12 @@ export default function ChatView({
           }
           return '';
         })();
-        
+
         // Normalize both IDs to strings for consistent comparison
         const normalizedSenderId = senderId.toString();
         const normalizedCurrentUserId = currentUserId ? currentUserId.toString() : '';
         const isMe = normalizedCurrentUserId && normalizedSenderId && normalizedSenderId === normalizedCurrentUserId;
-        
+
         const senderProfile = typeof msg.sender === 'object' && msg.sender !== null ? msg.sender.profile : null
 
         return {
@@ -122,9 +122,9 @@ export default function ChatView({
           sender: isMe ? 'me' : 'them',
           text: msg.content,
           time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          avatar: isMe 
-            ? user?.profile?.avatar 
-            : (senderProfile?.avatar || chat?.avatar || '/u.jpeg'),
+          avatar: isMe
+            ? user?.profile?.avatar
+            : (senderProfile?.avatar || chat?.avatar),
           senderName: !isMe
             ? (senderProfile ? `${senderProfile.firstName || ''} ${senderProfile.lastName || ''}`.trim() : chat?.name) || 'Unknown'
             : 'You',
@@ -137,15 +137,15 @@ export default function ChatView({
 
   const handleSendMessage = async (messageText) => {
     if (!messageText?.trim() || !conversationId) return
-    
+
     try {
       await sendChatMessage(messageText)
-      
+
       // Update conversation in parent
       if (onUpdateChat) {
-        onUpdateChat(conversationId, { 
-          message: messageText, 
-          time: 'now' 
+        onUpdateChat(conversationId, {
+          message: messageText,
+          time: 'now'
         })
       }
     } catch (error) {
@@ -155,13 +155,13 @@ export default function ChatView({
 
   const handleTyping = () => {
     if (!conversationId || !participantId) return
-    
+
     startTyping()
-    
+
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current)
     }
-    
+
     typingTimeoutRef.current = setTimeout(() => {
       stopTyping()
     }, 3000)
@@ -170,32 +170,32 @@ export default function ChatView({
   const handlePinToggle = async (chatId, isPinned) => {
     setChatState(prev => ({ ...prev, isPinned }))
     onUpdateChat?.(chatId, { isPinned })
-    
+
     try {
       await updateConversationSettings({ isPinned })
     } catch (error) {
       console.error('Error updating pin status:', error)
     }
   }
-  
+
   const handleMuteToggle = async (chatId, isMuted) => {
     setChatState(prev => ({ ...prev, isMuted }))
     onUpdateChat?.(chatId, { isMuted })
-    
+
     try {
       await updateConversationSettings({ isMuted })
     } catch (error) {
       console.error('Error updating mute status:', error)
     }
   }
-  
+
   const handleArchiveToggle = async (chatId, isArchived) => {
     setChatState(prev => ({ ...prev, isArchived }))
     onUpdateChat?.(chatId, { isArchived })
-    
+
     try {
       await updateConversationSettings({ isArchived })
-      
+
       // If archived, go back to chat list
       if (isArchived && onBack) {
         onBack()
@@ -204,11 +204,11 @@ export default function ChatView({
       console.error('Error updating archive status:', error)
     }
   }
-  
+
   const handleBlockToggle = async (chatId, isBlocked) => {
     setChatState(prev => ({ ...prev, isBlocked }))
     onUpdateChat?.(chatId, { isBlocked })
-    
+
     try {
       await updateConversationSettings({ isBlocked })
     } catch (error) {
@@ -219,22 +219,22 @@ export default function ChatView({
   const handleClearChat = () => {
     setShowClearChatConfirm(true)
   }
-  
+
   const confirmClearChat = async () => {
     try {
       await chatAPI.deleteAllMessages(conversationId)
-      
+
       // Clear messages locally
       fetchMessages(conversationId)
-      
+
       // Update conversation in parent
       if (onUpdateChat) {
-        onUpdateChat(conversationId, { 
-          message: 'No messages yet', 
-          time: '' 
+        onUpdateChat(conversationId, {
+          message: 'No messages yet',
+          time: ''
         })
       }
-      
+
       setShowClearChatConfirm(false)
     } catch (error) {
       console.error('Error clearing chat:', error)
@@ -267,7 +267,7 @@ export default function ChatView({
         onArchiveToggle={handleArchiveToggle}
         onClearChat={handleClearChat}
       />
-      
+
       <div className={`flex-1 overflow-y-auto p-3 md:p-6 space-y-4 ${bgColor} ${scrollClass}`}>
         {messagesLoading && messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
@@ -292,22 +292,22 @@ export default function ChatView({
           </>
         )}
       </div>
-      
-      <ChatInput 
+
+      <ChatInput
         onVoiceRecord={() => handleFeatureClick("Voice Recording")}
-        onSendMessage={handleSendMessage} 
+        onSendMessage={handleSendMessage}
         onSendFile={() => handleFeatureClick("File Upload")}
         onTyping={handleTyping}
       />
 
       {showDeliveryStatus && <DeliveryStatusModal onClose={() => setShowDeliveryStatus(false)} />}
       {showComingSoon && (
-        <FeatureComingSoonModal 
-          feature={comingSoonFeature || 'Feature'} 
-          onClose={() => setShowComingSoon(false)} 
+        <FeatureComingSoonModal
+          feature={comingSoonFeature || 'Feature'}
+          onClose={() => setShowComingSoon(false)}
         />
       )}
-      
+
       {/* Clear Chat Confirmation Modal */}
       {showClearChatConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

@@ -18,11 +18,11 @@ export default function RevenueChart() {
         if (response.data?.success) {
           setData(response.data.data?.data || [])
         } else {
-          setError(response.data?.message || "Failed to load chart data")
+          setError(response.data?.message || "We couldn't load revenue data. Please try again.")
         }
       } catch (err) {
         console.error("Error fetching revenue chart data:", err)
-        setError(err.message || "Failed to load chart data")
+        setError(err.message || "We couldn't load revenue data. Please try again.")
       } finally {
         setLoading(false)
       }
@@ -32,7 +32,7 @@ export default function RevenueChart() {
   }, [range])
 
   return (
-    <div className="h-72 relative rounded-xl border border-white/10 bg-[#161619] p-3">
+    <div className="h-64 lg:h-72 relative rounded-xl border border-white/10 bg-[#161619] p-3">
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center">
           <Loader2 className="w-6 h-6 animate-spin text-[#5D38DE]" />
@@ -46,9 +46,9 @@ export default function RevenueChart() {
       <div className="flex items-center justify-between mb-2 px-1">
         <p className="text-sm font-semibold text-white">User Load</p>
         <div className="flex gap-1">
-          <button onClick={() => setRange('7d')} className={`px-2 py-1 rounded text-xs ${range==='7d' ? 'bg-[#5D38DE] text-white' : 'bg-white/5 hover:bg-white/10'}`}>7D</button>
-          <button onClick={() => setRange('monthly')} className={`px-2 py-1 rounded text-xs ${range==='monthly' ? 'bg-[#5D38DE] text-white' : 'bg-white/5 hover:bg-white/10'}`}>Monthly</button>
-          <button onClick={() => setRange('yearly')} className={`px-2 py-1 rounded text-xs ${range==='yearly' ? 'bg-[#5D38DE] text-white' : 'bg-white/5 hover:bg-white/10'}`}>Yearly</button>
+          <button onClick={() => setRange('7d')} className={`px-2 py-1 rounded text-xs ${range === '7d' ? 'bg-[#5D38DE] text-white' : 'bg-white/5 hover:bg-white/10'}`}>7D</button>
+          <button onClick={() => setRange('monthly')} className={`px-2 py-1 rounded text-xs ${range === 'monthly' ? 'bg-[#5D38DE] text-white' : 'bg-white/5 hover:bg-white/10'}`}>Monthly</button>
+          <button onClick={() => setRange('yearly')} className={`px-2 py-1 rounded text-xs ${range === 'yearly' ? 'bg-[#5D38DE] text-white' : 'bg-white/5 hover:bg-white/10'}`}>Yearly</button>
         </div>
       </div>
       <ResponsiveContainer width="100%" height="85%">

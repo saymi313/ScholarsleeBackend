@@ -55,7 +55,7 @@ export default function FiltersSidebar({ filters = {}, onChange, onReset }) {
         setCategories(apiCategories.filter(Boolean))
       } catch (error) {
         console.error("Failed to load service categories", error)
-        setCategoriesError("Unable to load categories right now")
+        setCategoriesError("We couldn't load categories. Please refresh the page.")
       } finally {
         setLoadingCategories(false)
       }
@@ -144,11 +144,10 @@ export default function FiltersSidebar({ filters = {}, onChange, onReset }) {
                     key={category}
                     type="button"
                     onClick={() => handleCategoryChange(category)}
-                    className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
-                      isActive
+                    className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${isActive
                         ? "bg-[#5D38DE] text-white border-[#5D38DE]"
                         : "border-zinc-200 text-zinc-700 hover:border-[#5D38DE] hover:text-[#5D38DE]"
-                    }`}
+                      }`}
                   >
                     {formatCategory(category)}
                   </button>

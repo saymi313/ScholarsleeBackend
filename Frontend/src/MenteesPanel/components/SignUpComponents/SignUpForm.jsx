@@ -34,6 +34,9 @@ export default function SignUpForm() {
   const [privacyPopupOpen, setPrivacyPopupOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
   const setField = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }))
     setErrors(prev => ({ ...prev, [field]: undefined }))
@@ -41,17 +44,17 @@ export default function SignUpForm() {
 
   const validate = () => {
     const e = {}
-    if (!(isMentor ^ isStudent)) e.role = "Select exactly one role"
-    if (!nameRegex.test(form.firstName)) e.firstName = "Enter a valid first name"
-    if (!nameRegex.test(form.lastName)) e.lastName = "Enter a valid last name"
-    if (!emailRegex.test(form.email)) e.email = "Enter a valid email address"
-    if (!phoneRegex.test(form.mobile)) e.mobile = "Enter a valid mobile number"
-    if (!passwordRegex.test(form.password)) e.password = "Min 8 chars with letters and numbers"
-    if (form.password !== form.confirmPassword) e.confirmPassword = "Passwords do not match"
+    if (!(isMentor ^ isStudent)) e.role = "Please choose whether you're signing up as a Mentor or Student"
+    if (!nameRegex.test(form.firstName)) e.firstName = "Please enter your first name"
+    if (!nameRegex.test(form.lastName)) e.lastName = "Please enter your last name"
+    if (!emailRegex.test(form.email)) e.email = "Please enter a valid email address"
+    if (!phoneRegex.test(form.mobile)) e.mobile = "Please enter a valid mobile number"
+    if (!passwordRegex.test(form.password)) e.password = "Password must be at least 8 characters with letters and numbers"
+    if (form.password !== form.confirmPassword) e.confirmPassword = "Your passwords don't match — please re-enter them"
     if (!privacyAccepted) e.privacy = "You must accept the privacy policy to continue"
     if (isMentor) {
-      if (!form.nationality.trim()) e.nationality = "Nationality is required"
-      if (!form.currentCountry.trim()) e.currentCountry = "Current country is required"
+      if (!form.nationality.trim()) e.nationality = "Please enter your nationality"
+      if (!form.currentCountry.trim()) e.currentCountry = "Please enter your current country"
     }
     return e
   }
@@ -86,10 +89,10 @@ export default function SignUpForm() {
         navigate("/verify-email", { state: { email: form.email, role: isMentor ? "mentor" : "mentee" } });
         return;
       } else {
-        setErrors({ general: response.error || "Registration failed. Please try again." })
+        setErrors({ general: response.error || "We couldn't create your account. Please check your details and try again." })
       }
     } catch (error) {
-      setErrors({ general: error.message || "Registration failed. Please try again." })
+      setErrors({ general: error.message || "We couldn't create your account. Please check your details and try again." })
     } finally {
       setLoading(false)
     }
@@ -204,21 +207,49 @@ export default function SignUpForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <InputField
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={form.password}
                   onChange={(e) => setField("password", e.target.value)}
                   icon={<svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c1.657 0 3-1.567 3-3.5S13.657 4 12 4 9 5.567 9 7.5 10.343 11 12 11zm0 0v8m-6 0h12a2 2 0 002-2v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4a2 2 0 002 2z" /></svg>}
+                  rightIcon={
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="focus:outline-none">
+                      {showPassword ? (
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  }
                 />
                 {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
               </div>
               <div>
                 <InputField
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm password"
                   value={form.confirmPassword}
                   onChange={(e) => setField("confirmPassword", e.target.value)}
                   icon={<svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c1.657 0 3-1.567 3-3.5S13.657 4 12 4 9 5.567 9 7.5 10.343 11 12 11zm0 0v8m-6 0h12a2 2 0 002-2v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4a2 2 0 002 2z" /></svg>}
+                  rightIcon={
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="focus:outline-none">
+                      {showConfirmPassword ? (
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  }
                 />
                 {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
               </div>

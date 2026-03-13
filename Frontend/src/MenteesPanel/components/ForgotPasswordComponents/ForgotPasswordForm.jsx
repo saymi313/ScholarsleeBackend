@@ -11,7 +11,7 @@ const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-={}|\[\]\\:
 
 export default function ForgotPasswordForm() {
   const navigate = useNavigate()
-  
+
   // Form state
   const [step, setStep] = useState(1) // 1: Email, 2: OTP, 3: Password Reset
   const [email, setEmail] = useState("")
@@ -20,12 +20,12 @@ export default function ForgotPasswordForm() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  
+
   // UI state
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [successModal, setSuccessModal] = useState(false)
-  
+
   // Timer state for OTP resend
   const [timeLeft, setTimeLeft] = useState(300) // 5 minutes in seconds
   const [canResend, setCanResend] = useState(false)
@@ -79,7 +79,7 @@ export default function ForgotPasswordForm() {
         setCanResend(false)
       }
     } catch (err) {
-      setError(err.message || "Failed to send OTP. Please try again.")
+      setError(err.message || "We couldn't send the code. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -90,7 +90,7 @@ export default function ForgotPasswordForm() {
     if (!canResend) return
     setError("")
     setLoading(true)
-    
+
     try {
       const response = await authAPI.forgotPassword(email)
       if (response.data.success) {
@@ -99,7 +99,7 @@ export default function ForgotPasswordForm() {
         setOtp("")
       }
     } catch (err) {
-      setError(err.message || "Failed to resend OTP. Please try again.")
+      setError(err.message || "We couldn't resend the code. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -111,7 +111,7 @@ export default function ForgotPasswordForm() {
     setError("")
 
     if (otp.length !== 4) {
-      setError("Please enter the complete 4-digit OTP")
+      setError("Please enter the complete 4-digit code")
       return
     }
 
@@ -122,7 +122,7 @@ export default function ForgotPasswordForm() {
         setStep(3)
       }
     } catch (err) {
-      setError(err.message || "Invalid OTP. Please try again.")
+      setError(err.message || "That code didn't work. Please double-check and try again.")
     } finally {
       setLoading(false)
     }
@@ -150,7 +150,7 @@ export default function ForgotPasswordForm() {
         setSuccessModal(true)
       }
     } catch (err) {
-      setError(err.message || "Failed to reset password. Please try again.")
+      setError(err.message || "We couldn't reset your password. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -162,11 +162,10 @@ export default function ForgotPasswordForm() {
       {[1, 2, 3].map((s) => (
         <div key={s} className="flex items-center">
           <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
-              step >= s
-                ? "bg-[#5D38DE] text-white"
-                : "bg-gray-700 text-gray-400"
-            }`}
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${step >= s
+              ? "bg-[#5D38DE] text-white"
+              : "bg-gray-700 text-gray-400"
+              }`}
           >
             {step > s ? (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,9 +177,8 @@ export default function ForgotPasswordForm() {
           </div>
           {s < 3 && (
             <div
-              className={`w-12 h-0.5 mx-1 transition-all duration-300 ${
-                step > s ? "bg-[#5D38DE]" : "bg-gray-700"
-              }`}
+              className={`w-12 h-0.5 mx-1 transition-all duration-300 ${step > s ? "bg-[#5D38DE]" : "bg-gray-700"
+                }`}
             />
           )}
         </div>
@@ -220,9 +218,8 @@ export default function ForgotPasswordForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full ${
-                  loading ? "bg-gray-600 cursor-not-allowed" : "bg-[#5D38DE] hover:bg-[#4d2ec4]"
-                } text-white font-medium py-3 rounded-lg transition-all duration-200 font-['Poppins']`}
+                className={`w-full ${loading ? "bg-gray-600 cursor-not-allowed" : "bg-[#5D38DE] hover:bg-[#4d2ec4]"
+                  } text-white font-medium py-3 rounded-lg transition-all duration-200 font-['Poppins']`}
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
@@ -233,7 +230,7 @@ export default function ForgotPasswordForm() {
                     Sending...
                   </div>
                 ) : (
-                  "Send OTP"
+                  "Send verification code"
                 )}
               </button>
             </form>
@@ -244,7 +241,7 @@ export default function ForgotPasswordForm() {
         {step === 2 && (
           <>
             <div className="space-y-2">
-              <h2 className="text-3xl font-bold text-white font-['Poppins']">Verify OTP</h2>
+              <h2 className="text-3xl font-bold text-white font-['Poppins']">Enter your code</h2>
               <p className="text-gray-400 text-sm font-['Poppins']">
                 We've sent a 4-digit code to <span className="text-[#5D38DE]">{maskEmail(email)}</span>
               </p>
@@ -269,11 +266,10 @@ export default function ForgotPasswordForm() {
               <button
                 type="submit"
                 disabled={loading || otp.length !== 4}
-                className={`w-full ${
-                  loading || otp.length !== 4
-                    ? "bg-gray-600 cursor-not-allowed"
-                    : "bg-[#5D38DE] hover:bg-[#4d2ec4]"
-                } text-white font-medium py-3 rounded-lg transition-all duration-200 font-['Poppins']`}
+                className={`w-full ${loading || otp.length !== 4
+                  ? "bg-gray-600 cursor-not-allowed"
+                  : "bg-[#5D38DE] hover:bg-[#4d2ec4]"
+                  } text-white font-medium py-3 rounded-lg transition-all duration-200 font-['Poppins']`}
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
@@ -284,7 +280,7 @@ export default function ForgotPasswordForm() {
                     Verifying...
                   </div>
                 ) : (
-                  "Verify OTP"
+                  "Verify code"
                 )}
               </button>
 
@@ -294,13 +290,12 @@ export default function ForgotPasswordForm() {
                   type="button"
                   onClick={handleResendOTP}
                   disabled={!canResend || loading}
-                  className={`text-sm font-['Poppins'] ${
-                    canResend && !loading
-                      ? "text-[#5D38DE] hover:underline cursor-pointer"
-                      : "text-gray-500 cursor-not-allowed"
-                  }`}
+                  className={`text-sm font-['Poppins'] ${canResend && !loading
+                    ? "text-[#5D38DE] hover:underline cursor-pointer"
+                    : "text-gray-500 cursor-not-allowed"
+                    }`}
                 >
-                  {loading ? "Sending..." : "Resend OTP"}
+                  {loading ? "Sending..." : "Resend code"}
                 </button>
               </div>
             </form>
@@ -393,9 +388,8 @@ export default function ForgotPasswordForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full ${
-                  loading ? "bg-gray-600 cursor-not-allowed" : "bg-[#5D38DE] hover:bg-[#4d2ec4]"
-                } text-white font-medium py-3 rounded-lg transition-all duration-200 font-['Poppins']`}
+                className={`w-full ${loading ? "bg-gray-600 cursor-not-allowed" : "bg-[#5D38DE] hover:bg-[#4d2ec4]"
+                  } text-white font-medium py-3 rounded-lg transition-all duration-200 font-['Poppins']`}
               >
                 {loading ? (
                   <div className="flex items-center justify-center">

@@ -73,7 +73,7 @@ export default function CheckoutForm() {
 
   const phoneCountryCodes = useMemo(
     () => [
-        { code: "pk", name: "Pakistan", phoneCode: "+92", mask: "XXX XXXX XXX" },
+      { code: "pk", name: "Pakistan", phoneCode: "+92", mask: "XXX XXXX XXX" },
       { code: "us", name: "United States", phoneCode: "+1", mask: "(XXX) XXX-XXXX" },
       { code: "de", name: "Germany", phoneCode: "+49", mask: "XX XXX XXXX" },
       { code: "gb", name: "United Kingdom", phoneCode: "+44", mask: "XXXX XXX XXX" },
@@ -135,17 +135,17 @@ export default function CheckoutForm() {
     setError("")
 
     if (!checkoutData?.service || !checkoutData?.selectedPackage) {
-      setError("Please select a service package before proceeding.")
+      setError("Please select a service package to continue.")
       return
     }
 
     if (!scheduledDate) {
-      setError("Please select a preferred schedule.")
+      setError("Please pick a date and time for your session.")
       return
     }
 
     if (!agreeTerms) {
-      setError("You must accept the Terms and Conditions to continue.")
+      setError("Please accept the Terms and Conditions to continue.")
       return
     }
 
@@ -173,10 +173,10 @@ export default function CheckoutForm() {
       if (checkoutUrl) {
         window.location.href = checkoutUrl
       } else {
-        throw new Error("Unable to create Stripe checkout session")
+        throw new Error("We couldn't start the payment process. Please try again.")
       }
     } catch (submitError) {
-      setError(submitError.message || "Failed to start payment. Please try again.")
+      setError(submitError.message || "We couldn't start your payment. Please try again or contact support.")
     } finally {
       setLoading(false)
     }
@@ -260,7 +260,7 @@ export default function CheckoutForm() {
           </span>
           <div className="relative">
             <select
-              value={country} 
+              value={country}
               onChange={(e) => {
                 const selectedCountry = e.target.value
                 setCountry(selectedCountry)

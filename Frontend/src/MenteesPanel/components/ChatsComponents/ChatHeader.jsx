@@ -1,17 +1,33 @@
 "use client"
 
 import React, { useEffect, useRef, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Video, Phone, Info, MoreVertical, Pin, PinOff, VolumeX, Volume2, Archive, ArchiveRestore, Trash2 } from "lucide-react"
+import NameAvatar from "../../../shared/components/NameAvatar"
 
 export default function ChatHeader({ chat, onBack, onVideoCall, onVoiceCall, onInfo, onPinToggle, onMuteToggle, onArchiveToggle, onClearChat }) {
+  const navigate = useNavigate()
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef(null)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+
   useEffect(() => {
     const onClick = (e) => { if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setShowDropdown(false) }
     document.addEventListener('mousedown', onClick)
     return () => document.removeEventListener('mousedown', onClick)
   }, [])
+
+  // Handle mentor name click - navigate to mentor profile
+  const handleMentorClick = () => {
+    // Use participantSlug (already generated from name) for navigation
+    if (chat.participantSlug) {
+      navigate(`/mentees/mentor-details/${chat.participantSlug}`)
+    } else if (chat.mentorId || chat.participantId) {
+      // Fallback to ID if slug not available
+      navigate(`/mentees/mentor-details/${chat.mentorId || chat.participantId}`)
+    }
+  }
+
   return (
     <div className="bg-white border-b border-[#e5e7eb] px-4 md:px-6 py-4">
       <div className="flex items-center justify-between">
@@ -19,9 +35,14 @@ export default function ChatHeader({ chat, onBack, onVideoCall, onVoiceCall, onI
           <button onClick={onBack} className="md:hidden w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
             <ArrowLeft className="w-4 h-4 text-gray-600" />
           </button>
-          <img src={chat.avatar || "/a.jpg"} alt={chat.name} className="w-10 h-10 md:w-12 md:h-12 rounded-full border border-[#e5e7eb]" />
+          <NameAvatar src={chat.avatar} name={chat.name} size="w-10 h-10 md:w-12 md:h-12" className="border border-[#e5e7eb]" />
           <div className="min-w-0">
-            <h2 className="text-[#111111] font-semibold text-base md:text-lg truncate">{chat.name}</h2>
+            <button
+              onClick={handleMentorClick}
+              className="text-[#111111] font-semibold text-base md:text-lg truncate hover:text-[#5D38DE] transition-colors cursor-pointer text-left"
+            >
+              {chat.name}
+            </button>
             <p className="text-gray-500 text-xs md:text-sm truncate">Online</p>
           </div>
         </div>
@@ -37,7 +58,7 @@ export default function ChatHeader({ chat, onBack, onVideoCall, onVoiceCall, onI
             <Info className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
           </button>
           <div className="relative" ref={dropdownRef}>
-            <button onClick={() => setShowDropdown(v=>!v)} className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center">
+            <button onClick={() => setShowDropdown(v => !v)} className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center">
               <MoreVertical className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
             </button>
             {showDropdown && (
@@ -64,8 +85,8 @@ export default function ChatHeader({ chat, onBack, onVideoCall, onVoiceCall, onI
         </div>
       </div>
       {showClearConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={()=>setShowClearConfirm(false)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={(e)=>e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowClearConfirm(false)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-red-500/10 rounded-full flex items-center justify-center">
                 <Trash2 className="w-5 h-5 text-red-500" />
@@ -77,8 +98,8 @@ export default function ChatHeader({ chat, onBack, onVideoCall, onVoiceCall, onI
             </div>
             <p className="text-gray-700 mb-6">Are you sure you want to permanently delete all messages in this chat?</p>
             <div className="flex flex-col sm:flex-row gap-2">
-              <button onClick={()=>setShowClearConfirm(false)} className="flex-1 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-[#111111]">Cancel</button>
-              <button onClick={()=>{ onClearChat?.(); setShowClearConfirm(false) }} className="flex-1 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white">Clear Chat</button>
+              <button onClick={() => setShowClearConfirm(false)} className="flex-1 px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-[#111111]">Cancel</button>
+              <button onClick={() => { onClearChat?.(); setShowClearConfirm(false) }} className="flex-1 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white">Clear Chat</button>
             </div>
           </div>
         </div>

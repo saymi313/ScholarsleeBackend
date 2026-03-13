@@ -1,7 +1,9 @@
 import React, { useRef, useState } from "react"
 import axios from 'axios'
+import { useToast } from '../../../context/ToastContext'
 
 export default function AvatarUploader({ value, onChange, name = "User" }) {
+  const { showError } = useToast()
   const fileRef = useRef(null)
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState(null)
@@ -38,12 +40,12 @@ export default function AvatarUploader({ value, onChange, name = "User" }) {
         onChange?.(response.data.fileUrl)
         setPreview(null)
       } else {
-        alert('Upload failed: ' + response.data.message)
+        showError("We couldn't upload your photo. Please make sure it's a JPG or PNG image under 5MB.")
         setPreview(null)
       }
     } catch (error) {
       console.error('Upload error:', error)
-      alert('Failed to upload image: ' + (error.response?.data?.message || error.message))
+      showError("We couldn't upload your photo. Please make sure it's a JPG or PNG image under 5MB.")
       setPreview(null)
     } finally {
       setUploading(false)

@@ -152,7 +152,7 @@ export default function ProfilePage() {
         // Profile doesn't exist yet, this is normal for new users
       } else {
         console.error('Failed to load mentee profile:', profileResponse.data.message)
-        setError('Failed to load profile data')
+        setError("We couldn't load your profile. Please refresh the page.")
       }
     } catch (error) {
       if (error.message.includes('Unauthorized') || error.message.includes('401')) {
@@ -161,7 +161,7 @@ export default function ProfilePage() {
         // Profile not found, this is normal for new users
         setLoading(false)
       } else {
-        setError('Failed to load profile data')
+        setError("We couldn't load your profile. Please refresh the page.")
       }
     } finally {
       setLoading(false)
@@ -246,7 +246,7 @@ export default function ProfilePage() {
       console.log('👤 User update response:', userResponse.data)
 
       if (!userResponse.data.success) {
-        throw new Error(userResponse.data.message || 'Failed to update user profile')
+        throw new Error(userResponse.data.message || "We couldn't update your profile. Please try again.")
       }
 
       // Update mentee profile
@@ -304,21 +304,21 @@ export default function ProfilePage() {
               const updateResponse = await profileAPI.mentee.update(menteeData)
               console.log('🔄 Update response:', updateResponse.data)
               if (!updateResponse.data.success) {
-                throw new Error(updateResponse.data.message || 'Failed to update existing mentee profile')
+                throw new Error(updateResponse.data.message || "We couldn't update your profile. Please try again.")
               }
             } else {
-              throw new Error(createResponse.data.message || 'Failed to create mentee profile')
+              throw new Error(createResponse.data.message || "We couldn't create your profile. Please try again.")
             }
           }
         } else {
-          throw new Error(menteeResponse.data.message || 'Failed to update mentee profile')
+          throw new Error(menteeResponse.data.message || "We couldn't update your profile. Please try again.")
         }
       }
 
       setDirty(false)
       setSuccessMessage("Profile saved successfully")
     } catch (error) {
-      setError(error.message || 'Failed to save profile')
+      setError(error.message || "Your changes couldn't be saved. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -480,7 +480,11 @@ export default function ProfilePage() {
 
             <SectionCard title="Preview" description="What mentees will see.">
               <div className="flex items-center gap-3">
-                <img src={profile.avatar || "/u.jpeg"} alt="avatar" className="w-12 h-12 rounded-full border" />
+                <img
+                  src={profile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.fullName || 'User')}&background=random&size=128`}
+                  alt="avatar"
+                  className="w-12 h-12 rounded-full border"
+                />
                 <div className="min-w-0">
                   <h4 className="font-semibold truncate">{profile.fullName || "Your Name"}</h4>
                   <p className="text-sm text-gray-500 truncate">{profile.headline || "Headline / Role"}</p>

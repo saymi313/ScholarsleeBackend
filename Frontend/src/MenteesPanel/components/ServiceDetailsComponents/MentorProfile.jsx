@@ -33,8 +33,9 @@ export default function MentorProfile({ service }) {
     return 'Location not specified'
   }
 
-  const mentorProfileLink = service.mentorProfileId
-    ? `/mentees/mentor-details/${service.mentorProfileId}`
+  // Use mentor profile slug if available, otherwise fall back to mentorProfileId
+  const mentorProfileLink = service.mentorProfile?.slug || service.mentorProfileId
+    ? `/mentees/mentor-details/${service.mentorProfile?.slug || service.mentorProfileId}`
     : '#'
 
   return (

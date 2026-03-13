@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, Video, Play, Square, MoreVertical, Eye, X, CheckCircle } from 'lucide-react';
 import { meetingAPI } from '../../../utils/api';
+import { useToast } from '../../../context/ToastContext';
 
 const MeetingList = () => {
+  const { showError } = useToast();
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -16,10 +18,10 @@ const MeetingList = () => {
     try {
       setLoading(true);
       setError('');
-      
+
       const params = { status: filter === 'all' ? '' : filter };
       const response = await meetingAPI.getMentorMeetings(params);
-      
+
       if (response.data && response.data.success) {
         setMeetings(response.data.data.meetings || []);
       } else {
@@ -37,9 +39,9 @@ const MeetingList = () => {
     try {
       const response = await meetingAPI.startMeeting(meetingId);
       if (response.data && response.data.success) {
-        setMeetings(prev => 
-          prev.map(meeting => 
-            meeting._id === meetingId 
+        setMeetings(prev =>
+          prev.map(meeting =>
+            meeting._id === meetingId
               ? { ...meeting, status: 'in-progress' }
               : meeting
           )
@@ -47,7 +49,7 @@ const MeetingList = () => {
       }
     } catch (error) {
       console.error('Error starting meeting:', error);
-      alert('Failed to start meeting');
+      showError('Failed to start meeting');
     }
   };
 
@@ -57,9 +59,9 @@ const MeetingList = () => {
         notes: 'Meeting completed successfully'
       });
       if (response.data && response.data.success) {
-        setMeetings(prev => 
-          prev.map(meeting => 
-            meeting._id === meetingId 
+        setMeetings(prev =>
+          prev.map(meeting =>
+            meeting._id === meetingId
               ? { ...meeting, status: 'completed' }
               : meeting
           )
@@ -67,7 +69,7 @@ const MeetingList = () => {
       }
     } catch (error) {
       console.error('Error ending meeting:', error);
-      alert('Failed to end meeting');
+      showError('Failed to end meeting');
     }
   };
 
@@ -79,9 +81,9 @@ const MeetingList = () => {
         reason: 'Cancelled by mentor'
       });
       if (response.data && response.data.success) {
-        setMeetings(prev => 
-          prev.map(meeting => 
-            meeting._id === meetingId 
+        setMeetings(prev =>
+          prev.map(meeting =>
+            meeting._id === meetingId
               ? { ...meeting, status: 'cancelled' }
               : meeting
           )
@@ -89,7 +91,7 @@ const MeetingList = () => {
       }
     } catch (error) {
       console.error('Error cancelling meeting:', error);
-      alert('Failed to cancel meeting');
+      showError('Failed to cancel meeting');
     }
   };
 
@@ -162,11 +164,10 @@ const MeetingList = () => {
           <button
             key={filterType}
             onClick={() => setFilter(filterType)}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              filter === filterType
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filter === filterType
                 ? 'bg-purple-100 text-purple-700'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
+              }`}
           >
             {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
           </button>
@@ -179,7 +180,7 @@ const MeetingList = () => {
           <Video className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No Meetings Found</h3>
           <p className="text-gray-500">
-            {filter === 'all' 
+            {filter === 'all'
               ? 'You don\'t have any meetings scheduled yet.'
               : `No ${filter} meetings found.`
             }
@@ -190,11 +191,10 @@ const MeetingList = () => {
           {meetings.map((meeting) => (
             <div
               key={meeting._id}
-              className={`bg-white border rounded-lg p-6 hover:shadow-md transition-shadow ${
-                isMeetingTime(meeting.scheduledDate) && meeting.status === 'scheduled'
+              className={`bg-white border rounded-lg p-6 hover:shadow-md transition-shadow ${isMeetingTime(meeting.scheduledDate) && meeting.status === 'scheduled'
                   ? 'border-purple-300 bg-purple-50'
                   : 'border-gray-200'
-              }`}
+                }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -251,7 +251,7 @@ const MeetingList = () => {
                         <Video className="w-4 h-4" />
                         Join Meeting
                       </a>
-                      
+
                       {meeting.status === 'scheduled' && (
                         <button
                           onClick={() => startMeeting(meeting._id)}
@@ -261,7 +261,7 @@ const MeetingList = () => {
                           Start Meeting
                         </button>
                       )}
-                      
+
                       {meeting.status === 'in-progress' && (
                         <button
                           onClick={() => endMeeting(meeting._id)}
@@ -277,13 +277,13 @@ const MeetingList = () => {
 
                 <div className="flex items-center gap-2 ml-4">
                   <button
-                    onClick={() => {/* View meeting details */}}
+                    onClick={() => {/* View meeting details */ }}
                     className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                     title="View Details"
                   >
                     <Eye className="w-4 h-4" />
                   </button>
-                  
+
                   {(meeting.status === 'scheduled' || meeting.status === 'in-progress') && (
                     <button
                       onClick={() => cancelMeeting(meeting._id)}

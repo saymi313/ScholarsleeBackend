@@ -1,3 +1,4 @@
+import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import AdminSidebar from '../components/AdminSidebar'
 import AdminHeader from '../components/AdminHeader'
@@ -14,20 +15,25 @@ import Notifications from '../pages/Notifications'
 import Settings from '../pages/Settings'
 import Logs from '../pages/Logs'
 import Admins from '../pages/Admins'
+import Payouts from '../pages/Payouts'
 
-const Shell = ({ children }) => (
-  <AdminStoreProvider>
-    <div className="flex min-h-screen bg-[#0a0a0a] text-white font-['Poppins']">
-      <AdminSidebar />
-      <div className="flex-1 flex flex-col">
-        <AdminHeader />
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
-          {children}
-        </main>
+const Shell = ({ children }) => {
+  const [sidebarOpen, setSidebarOpen] = React.useState(false)
+
+  return (
+    <AdminStoreProvider>
+      <div className="flex min-h-screen bg-[#0a0a0a] text-white font-['Poppins']">
+        <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <div className="flex-1 flex flex-col min-w-0">
+          <AdminHeader onMenu={() => setSidebarOpen(true)} />
+          <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
-  </AdminStoreProvider>
-)
+    </AdminStoreProvider>
+  )
+}
 
 export default function AdminRoutes() {
   return (
@@ -45,6 +51,7 @@ export default function AdminRoutes() {
         <Route path="settings" element={<Shell><Settings /></Shell>} />
         <Route path="logs" element={<Shell><Logs /></Shell>} />
         <Route path="admins" element={<Shell><Admins /></Shell>} />
+        <Route path="payouts" element={<Shell><Payouts /></Shell>} />
         <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Routes>
     </ProtectedRoute>

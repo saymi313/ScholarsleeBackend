@@ -13,7 +13,8 @@ export default function Dashboard() {
     revenueMTD: 0,
     mentees: 0,
     activeMentors: 0,
-    activeServices: 0
+    activeServices: 0,
+    payoutsPending: 0
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -27,11 +28,11 @@ export default function Dashboard() {
         if (response.data?.success) {
           setMetrics(response.data.data)
         } else {
-          setError(response.data?.message || "Failed to load metrics")
+          setError(response.data?.message || "We couldn't load dashboard data. Please refresh the page.")
         }
       } catch (err) {
         console.error("Error fetching dashboard metrics:", err)
-        setError(err.message || "Failed to load dashboard metrics")
+        setError(err.message || "We couldn't load dashboard data. Please refresh the page.")
       } finally {
         setLoading(false)
       }
@@ -59,11 +60,12 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
         <KpiCard label="Revenue (MTD)" value={`$${metrics.revenueMTD.toFixed(0)}`} subtitle="All paid bookings this month" accent="#89f17f" />
         <KpiCard label="Mentees" value={String(metrics.mentees)} subtitle="Registered users" accent="#5D38DE" />
-        <KpiCard label="Mentors (Active)" value={String(metrics.activeMentors)} subtitle="Approved mentors" accent="#38bdf8" />
-        <KpiCard label="Services (Active)" value={String(metrics.activeServices)} subtitle="Approved services" accent="#f59e0b" />
+        <KpiCard label="Mentors" value={String(metrics.activeMentors)} subtitle="Active approved mentors" accent="#38bdf8" />
+        <KpiCard label="Services" value={String(metrics.activeServices)} subtitle="Live service listings" accent="#f59e0b" />
+        <KpiCard label="Pending Payouts" value={String(metrics.payoutsPending)} subtitle="Withdrawals to process" accent="#ef4444" />
       </div>
 
       {/* Charts + Actions */}

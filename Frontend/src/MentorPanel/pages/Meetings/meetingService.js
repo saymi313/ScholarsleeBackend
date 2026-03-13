@@ -45,7 +45,7 @@ class MeetingService {
         body: credentials ? JSON.stringify({ credentials }) : JSON.stringify({})
       });
 
-      const result = await readResponseBody(response, 'Failed to initialize Google Meet client.');
+      const result = await readResponseBody(response, "We couldn't connect to Google Meet. Please try again.");
 
       if (result.success) {
         this.clientConfigured = true;
@@ -67,11 +67,11 @@ class MeetingService {
     const response = await this.initializeGoogleClient();
 
     if (!response.success) {
-      throw new Error(response.message || 'Failed to initialize Google Meet client.');
+      throw new Error(response.message || "We couldn't connect to Google Meet. Please try again.");
     }
 
     if (!response.data?.calendarReady) {
-      throw new Error('Google Meet integration is not authorized yet. Please complete the Google authorization flow.');
+      throw new Error('Please connect your Google Calendar first by clicking the "Connect Google Calendar" button on the Meetings page.');
     }
 
     this.calendarReady = true;
@@ -89,7 +89,7 @@ class MeetingService {
         }
       });
 
-      return readResponseBody(response, 'Failed to generate Google authorization URL.');
+      return readResponseBody(response, "We couldn't connect to Google. Please try again.");
     } catch (error) {
       console.error('Error getting auth URL:', error);
       throw error;
@@ -102,7 +102,7 @@ class MeetingService {
     const response = await this.getAuthUrl();
 
     if (!response.success) {
-      throw new Error(response.message || 'Failed to generate Google authorization URL.');
+      throw new Error(response.message || "We couldn't connect to Google. Please try again.");
     }
 
     const authUrl = response.data?.authUrl;
@@ -124,7 +124,7 @@ class MeetingService {
     const response = await this.getTokens(code);
 
     if (!response.success) {
-      throw new Error(response.message || 'Failed to retrieve Google OAuth tokens.');
+      throw new Error(response.message || "We couldn't complete Google sign-in. Please try again.");
     }
 
     this.clientConfigured = true;
@@ -149,7 +149,7 @@ class MeetingService {
         body: JSON.stringify({ code })
       });
 
-      return readResponseBody(response, 'Failed to retrieve Google OAuth tokens.');
+      return readResponseBody(response, "We couldn't complete Google sign-in. Please try again.");
     } catch (error) {
       console.error('Error getting tokens:', error);
       throw error;
@@ -187,7 +187,7 @@ class MeetingService {
         body: JSON.stringify(apiData)
       });
 
-      const result = await readResponseBody(response, 'Failed to create meeting');
+      const result = await readResponseBody(response, "We couldn't create the meeting. Please try again.");
 
       if (result.success) {
         return {
@@ -200,7 +200,7 @@ class MeetingService {
           message: 'Google Meet meeting created successfully'
         };
       } else {
-        throw new Error(result.message || 'Failed to create meeting');
+        throw new Error(result.message || "We couldn't create the meeting. Please try again.");
       }
 
     } catch (error) {
@@ -220,7 +220,7 @@ class MeetingService {
         }
       });
 
-      const result = await readResponseBody(response, 'Failed to fetch meetings');
+      const result = await readResponseBody(response, "We couldn't load your meetings. Please refresh the page.");
 
       if (result.success) {
         return {
@@ -229,7 +229,7 @@ class MeetingService {
           meetingsByDate: result.data.meetingsByDate || {}
         };
       } else {
-        throw new Error(result.message || 'Failed to fetch meetings');
+        throw new Error(result.message || "We couldn't load your meetings. Please refresh the page.");
       }
     } catch (error) {
       console.error('Error fetching meetings by date range:', error);
@@ -249,7 +249,7 @@ class MeetingService {
         }
       });
 
-      const result = await readResponseBody(response, 'Failed to fetch meetings');
+      const result = await readResponseBody(response, "We couldn't load your meetings. Please refresh the page.");
 
       if (result.success) {
         return {
@@ -257,7 +257,7 @@ class MeetingService {
           meetings: result.data.meetings || []
         };
       } else {
-        throw new Error(result.message || 'Failed to fetch meetings');
+        throw new Error(result.message || "We couldn't load your meetings. Please refresh the page.");
       }
     } catch (error) {
       console.error('Error fetching meetings by date:', error);
@@ -277,7 +277,7 @@ class MeetingService {
         }
       });
 
-      const result = await readResponseBody(response, 'Failed to delete meeting');
+      const result = await readResponseBody(response, "We couldn't cancel this meeting. Please try again.");
 
       if (result.success) {
         return {
@@ -285,7 +285,7 @@ class MeetingService {
           message: result.message || 'Meeting deleted successfully'
         };
       } else {
-        throw new Error(result.message || 'Failed to delete meeting');
+        throw new Error(result.message || "We couldn't cancel this meeting. Please try again.");
       }
     } catch (error) {
       console.error('Error deleting meeting:', error);

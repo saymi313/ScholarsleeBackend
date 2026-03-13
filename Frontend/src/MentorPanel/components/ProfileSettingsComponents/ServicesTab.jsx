@@ -1,11 +1,13 @@
-"use client"
+
 
 import { useState, useEffect } from "react"
 import { Plus, Edit, Trash2, Star, Clock, DollarSign, X, Image as ImageIcon, Loader2 } from "lucide-react"
 import { profileAPI, servicesAPI } from "../../../utils/api"
+import { useToast } from "../../../context/ToastContext"
 
-const ServicesTab = () => {
+export default function ServicesTab() {
   const [services, setServices] = useState([])
+  const { showError, showWarning } = useToast()
 
   const [isLoading, setIsLoading] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -78,7 +80,7 @@ const ServicesTab = () => {
         }
       } catch (error) {
         console.error("Failed to delete service:", error)
-        alert("Failed to delete service")
+        showError("We couldn't delete this service. Please try again.")
       }
     }
   }
@@ -152,12 +154,12 @@ const ServicesTab = () => {
         }
       } catch (error) {
         console.error("Failed to create service:", error)
-        alert("Failed to create service. Please check all fields.")
+        showError("We couldn't create your service. Please check all required fields and try again.")
       } finally {
         setIsLoading(false)
       }
     } else {
-      alert("Please fill in all required fields (Title, Description, Overview)")
+      showWarning("Please fill in all required fields (Title, Description, Overview)")
     }
   }
 
@@ -232,12 +234,12 @@ const ServicesTab = () => {
         }
       } catch (error) {
         console.error("Failed to update service:", error)
-        alert("Failed to update service")
+        showError("We couldn't save your changes to this service. Please try again.")
       } finally {
         setIsLoading(false)
       }
     } else {
-      alert("Please fill in all required fields (Title, Description, Overview)")
+      showWarning("Please fill in all required fields (Title, Description, Overview)")
     }
   }
 
@@ -247,7 +249,7 @@ const ServicesTab = () => {
 
     // Limit to 5 images total
     if ((newService.images?.length || 0) + files.length > 5) {
-      alert("You can only upload up to 5 images per service.")
+      showWarning("You can only upload up to 5 images per service.")
       return
     }
 
@@ -279,7 +281,7 @@ const ServicesTab = () => {
       console.error("❌ Image upload failed:", error)
       console.error("Error response:", error.response?.data)
       console.error("Error status:", error.response?.status)
-      alert(`Failed to upload images: ${error.response?.data?.message || error.message}`)
+      showError("We couldn't upload your images. Please use JPG or PNG files under 5MB each.")
     } finally {
       setIsUploading(false)
     }
@@ -360,7 +362,7 @@ const ServicesTab = () => {
                 <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-[#5D38DE] flex-shrink-0" />
                 <div>
                   <div className="text-xs text-gray-400">Starting at</div>
-                  <div className="text-lg sm:text-xl font-bold text-white break-all">Rs {service.price.toLocaleString()}</div>
+                  <div className="text-lg sm:text-xl font-bold text-white break-all">$ {service.price.toLocaleString()}</div>
                 </div>
               </div>
               <div className="flex gap-2 justify-end sm:justify-start">
@@ -501,7 +503,7 @@ const ServicesTab = () => {
                       <h5 className="text-white font-semibold mb-3 capitalize">{packageType} Package</h5>
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-xs text-gray-400 mb-1">Price (Rs)</label>
+                          <label className="block text-xs text-gray-400 mb-1">Price ($)</label>
                           <input
                             type="number"
                             value={newService.packages[packageType].price}
@@ -516,7 +518,8 @@ const ServicesTab = () => {
                               }
                             })}
                             className="w-full bg-[#1a1a1a] text-white rounded p-2 border border-[#3a3a3a] focus:border-[#5D38DE] focus:outline-none text-sm"
-                            placeholder="5000"
+                            placeholder="10"
+                            min="10"
                           />
                         </div>
                         <div>
@@ -668,4 +671,3 @@ const ServicesTab = () => {
   )
 }
 
-export default ServicesTab

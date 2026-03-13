@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from "react"
-import { Edit2, X, Check, GraduationCap, Briefcase, Award, Code } from "lucide-react"
+import { Edit2, X, Check, GraduationCap, Briefcase, Award, Code, Clock } from "lucide-react"
 import { mentorProfileAPI } from "../../../utils/api"
 import EducationSection from "./EducationSection"
 import ExperienceSection from "./ExperienceSection"
 import SkillsSection from "./SkillsSection"
 import HonorsSection from "./HonorsSection"
+import AvailabilitySection from "./AvailabilitySection"
 
 const BackgroundTab = () => {
   const [isEditing, setIsEditing] = useState(false)
@@ -21,6 +22,7 @@ const BackgroundTab = () => {
   const experienceRef = useRef(null)
   const skillsRef = useRef(null)
   const honorsRef = useRef(null)
+  const availabilityRef = useRef(null)
 
   const MIN_LENGTH = 50
   const MAX_LENGTH = 5000
@@ -132,6 +134,11 @@ const BackgroundTab = () => {
         updateData.specializations = skillsData.map(s => s.name)
       }
 
+      // Get availability data if ref exists
+      if (availabilityRef.current?.getData) {
+        updateData.availability = availabilityRef.current.getData()
+      }
+
       console.log('Saving profile data:', updateData)
 
       // Save all data at once
@@ -143,7 +150,7 @@ const BackgroundTab = () => {
       setMessage("✓ Profile saved successfully")
       setTimeout(() => setMessage(""), 3000)
     } catch (error) {
-      setMessage("✗ Failed to save profile")
+      setMessage("We couldn't save your profile. Please try again.")
       console.error("Save error:", error)
     } finally {
       setSaving(false)
@@ -309,6 +316,44 @@ const BackgroundTab = () => {
               <p className="text-gray-500 italic">No honors or awards added yet.</p>
             )}
           </div>
+
+          <hr className="border-[#3a3a3a]" />
+
+          {/* Availability Display */}
+          <div>
+            <h3 className="text-xl font-bold text-white mb-3 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-[#5D38DE]" />
+              Availability
+            </h3>
+            {profileData?.availability ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-[#242424] p-4 rounded-xl border border-[#3a3a3a]">
+                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Timezone</p>
+                  <p className="text-white font-medium">{profileData.availability.timezone || 'UTC'}</p>
+                </div>
+                <div className="bg-[#242424] p-4 rounded-xl border border-[#3a3a3a]">
+                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Working Hours</p>
+                  <p className="text-white font-medium">{profileData.availability.workingHours || 'Not specified'}</p>
+                </div>
+                <div className="sm:col-span-2 bg-[#242424] p-4 rounded-xl border border-[#3a3a3a]">
+                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Available Days</p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {profileData.availability.daysAvailable?.length > 0 ? (
+                      profileData.availability.daysAvailable.map(day => (
+                        <span key={day} className="px-3 py-1 bg-[#5D38DE]/10 text-[#5D38DE] text-xs font-medium rounded-full border border-[#5D38DE]/20">
+                          {day}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 italic text-sm">No specific days selected.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500 italic">No availability information added yet.</p>
+            )}
+          </div>
         </div>
       </div>
     )
@@ -358,6 +403,7 @@ const BackgroundTab = () => {
       <ExperienceSection ref={experienceRef} />
       <SkillsSection ref={skillsRef} />
       <HonorsSection ref={honorsRef} />
+      <AvailabilitySection ref={availabilityRef} initialData={profileData?.availability} />
 
       {/* Save and Cancel Buttons */}
       <div className="bg-[#1a1a1a] rounded-2xl p-6 border border-[#2a2a2a] sticky bottom-0 z-10">

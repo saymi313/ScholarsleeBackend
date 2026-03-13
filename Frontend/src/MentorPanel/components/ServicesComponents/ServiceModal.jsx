@@ -141,7 +141,7 @@ const ServiceModal = ({ isOpen, onClose, service = null, onSuccess }) => {
       }
     } catch (err) {
       console.error('❌ Image upload error:', err);
-      setError(`Failed to upload images: ${err.message}`);
+      setError("We couldn't upload your images. Please use JPG or PNG files under 5MB each.");
     } finally {
       setLoading(false);
       // Reset input value to allow selecting same file again if needed
@@ -210,22 +210,23 @@ const ServiceModal = ({ isOpen, onClose, service = null, onSuccess }) => {
           onClose();
         }, 1500);
       } else {
-        setError(response.data.message || 'Failed to save service');
+        setError(response.data.message || "We couldn't save your service. Please check all fields and try again.");
       }
     } catch (error) {
       console.error('Error saving service:', error);
 
       // Handle specific error types
       if (error.code === 'ECONNABORTED') {
-        setError('Upload timeout. Please try again with smaller images or check your connection.');
+        setError("This is taking too long — your images may be too large. Please try smaller files.");
       } else if (error.message.includes('Network Error')) {
-        setError('Network error. Please check your connection and try again.');
+        setError("We couldn't reach the server. Please check your internet and try again.");
       } else if (error.message.includes('timeout')) {
-        setError('Request timeout. Please try again with smaller images.');
+        setError("This is taking too long — your images may be too large. Please try smaller files.");
       } else {
-        setError(error.message || 'Failed to save service');
+        setError(error.message || "We couldn't save your service. Please check all fields and try again.");
       }
-    } finally {
+    }
+    finally {
       setLoading(false);
     }
   };
@@ -359,7 +360,8 @@ const ServiceModal = ({ isOpen, onClose, service = null, onSuccess }) => {
                           value={pkg.price}
                           onChange={(e) => handlePackageChange(index, 'price', e.target.value)}
                           className="w-full px-3 py-2 bg-[#1a1a1a] border border-[#3a3a3a] rounded-lg text-white focus:border-[#5D38DE] focus:outline-none transition-colors"
-                          placeholder="0"
+                          placeholder="Min 10"
+                          min="10"
                         />
                       </div>
 

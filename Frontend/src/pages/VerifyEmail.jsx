@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { Mail, Loader2, CheckCircle } from 'lucide-react';
 
 const VerifyEmail = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { verifyEmail, resendVerificationEmail } = useAuth();
+    const { showSuccess } = useToast();
 
     const email = location.state?.email || '';
     const role = location.state?.role || 'mentee';
@@ -77,8 +79,16 @@ const VerifyEmail = () => {
                 // Redirect after a short delay
                 setTimeout(() => {
                     if (role === 'mentor') {
-                        // Mentors go to pending approval page
-                        navigate('/mentor-pending-approval');
+                        // Check mentor approval status from response
+                        const mentorApprovalStatus = response.data?.user?.mentorApprovalStatus;
+
+                        // Only show pending approval page if mentor requires approval
+                        if (mentorApprovalStatus === 'pending') {
+                            navigate('/mentor-pending-approval');
+                        } else {
+                            // Auto-approved or null (auto-approve) - redirect to login
+                            navigate('/login');
+                        }
                     } else {
                         // Mentees go to home/dashboard
                         navigate('/home');
@@ -88,7 +98,7 @@ const VerifyEmail = () => {
                 setError(response.error || 'Invalid verification code');
             }
         } catch (err) {
-            setError('Failed to verify email. Please try again.');
+            setError("We couldn't verify your email. Please check the code and try again.");
         } finally {
             setLoading(false);
         }
@@ -103,13 +113,13 @@ const VerifyEmail = () => {
             const response = await resendVerificationEmail(email);
 
             if (response.success) {
-                alert('A new verification code has been sent to your email');
+                showSuccess('A new verification code has been sent to your email');
                 setOtp(['', '', '', '', '', '']);
             } else {
-                setError(response.error || 'Failed to resend code');
+                setError(response.error || "We couldn't resend the code. Please try again.");
             }
         } catch (err) {
-            setError('Failed to resend code. Please try again.');
+            setError("We couldn't resend the code. Please try again.");
         } finally {
             setResending(false);
         }
@@ -123,7 +133,7 @@ const VerifyEmail = () => {
                     <h2 className="text-2xl font-bold text-white mb-2">Email Verified!</h2>
                     <p className="text-gray-400">
                         {role === 'mentor'
-                            ? 'Your email has been verified. Your account is now pending admin approval.'
+                            ? 'Your email has been verified successfully. Redirecting...'
                             : 'Your email has been verified successfully. Redirecting...'}
                     </p>
                 </div>
@@ -180,8 +190,8 @@ const VerifyEmail = () => {
                         type="submit"
                         disabled={loading || otp.some(d => !d)}
                         className={`w-full py-3 rounded-lg font-semibold transition-all ${loading || otp.some(d => !d)
-                                ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                                : 'bg-[#5D38DE] hover:bg-[#5D38DE]/90 text-white'
+                            ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                            : 'bg-[#5D38DE] hover:bg-[#5D38DE]/90 text-white'
                             }`}
                     >
                         {loading ? (

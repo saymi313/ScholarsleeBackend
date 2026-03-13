@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState, useRef } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useSocket } from "../hooks/useSocket"
 import { useChat } from "../hooks/useChat"
@@ -45,7 +45,11 @@ export default function ChatsPage({
     onlineUsers
   } = useChat()
 
-  const [selectedChatId, setSelectedChatId] = useState(null)
+  // Initialize selectedChatId from URL query parameter to persist across refreshes
+  const [selectedChatId, setSelectedChatId] = useState(() => {
+    const chatIdFromUrl = searchParams.get('chat')
+    return chatIdFromUrl || null
+  })
   const [creatingConversation, setCreatingConversation] = useState(false)
 
   // Helper function to format time
@@ -62,12 +66,97 @@ export default function ChatsPage({
     return `${days}d ago`
   }
 
-  // Fetch conversations when socket connects
+
+  // Fetch conversations immediately on mount and when socket connects
+  // This ensures conversations load even if socket reconnection is slow
+  useEffect(() => {
+    console.log('🔄 ChatsPage mounted or socket state changed. Connected:', connected)
+    // Fetch immediately on mount, don't wait for socket
+    if (!loading) {
+      console.log('📞 Fetching conversations...')
+      fetchConversations()
+    }
+  }, [fetchConversations])
+
+  // Also refetch when socket connects/reconnects to get latest data
   useEffect(() => {
     if (connected) {
+      console.log('✅ Socket connected, refetching conversations to get latest data')
       fetchConversations()
     }
   }, [connected, fetchConversations])
+
+  // Note: URL sync effect moved after chats definition to avoid reference error
+
+  // Ensure chat selection persists when conversations load
+  // This fixes the race condition where URL has a chat ID but conversations haven't loaded yet
+  const restorationAttemptedRef = useRef(false)
+
+  useEffect(() => {
+    const chatIdFromUrl = searchParams.get('chat')
+
+    // Reset restoration flag when URL changes
+    if (!chatIdFromUrl) {
+      restorationAttemptedRef.current = false
+      return
+    }
+
+    // If we have a chat ID in URL, conversations have loaded, and we haven't attempted restoration yet
+    if (chatIdFromUrl && conversations.length > 0 && !loading && !restorationAttemptedRef.current) {
+      // Try to find by slug first (name-based), then by conversationId (legacy)
+      const chatBySlug = conversations.find(conv => {
+        const firstName = conv.participant?.profile?.firstName || ''
+        const lastName = conv.participant?.profile?.lastName || ''
+        const slug = `${firstName} ${lastName}`
+          .toLowerCase()
+          .trim()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/[\s_-]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+        return slug === chatIdFromUrl
+      })
+
+      const chatById = conversations.find(conv => conv.conversationId === chatIdFromUrl)
+      const matchedConversation = chatBySlug || chatById
+
+      if (matchedConversation) {
+        // Restore selection from URL now that conversations are loaded
+        console.log('📌 Restoring chat selection from URL after conversations loaded:', chatIdFromUrl)
+        setSelectedChatId(matchedConversation.conversationId)
+
+        // Update URL to use slug if we found by conversation ID (legacy URL)
+        if (!chatBySlug && chatById) {
+          // Generate slug for URL update
+          const firstName = matchedConversation.participant?.profile?.firstName || ''
+          const lastName = matchedConversation.participant?.profile?.lastName || ''
+          const slug = `${firstName} ${lastName}`
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '') || 'unknown-user'
+
+          console.log('🔄 Updating URL from conversation ID to slug:', slug)
+          setSearchParams(params => {
+            const newParams = new URLSearchParams(params)
+            newParams.set('chat', slug)
+            return newParams
+          })
+        }
+      } else {
+        // Chat ID/slug in URL doesn't exist - clear the URL parameter
+        console.log('⚠️ Chat from URL not found in conversations, clearing URL parameter')
+        setSearchParams(params => {
+          const newParams = new URLSearchParams(params)
+          newParams.delete('chat')
+          return newParams
+        })
+      }
+
+      // Mark that we've attempted restoration for this URL
+      restorationAttemptedRef.current = true
+    }
+  }, [conversations, loading, searchParams, setSearchParams, selectedChatId])
 
   // Handle query parameters for creating conversations (e.g., ?mentorId=...)
   useEffect(() => {
@@ -113,25 +202,65 @@ export default function ChatsPage({
 
   // Transform conversations to chat format for ChatsSidebar
   const chats = useMemo(() => {
-    return conversations.map(conv => ({
-      id: conv.conversationId,
-      conversationId: conv.conversationId,
-      name: conv.participant ?
-        `${conv.participant.profile?.firstName || ''} ${conv.participant.profile?.lastName || ''}`.trim() :
-        'Unknown',
-      message: conv.lastMessage?.content || 'No messages yet',
-      avatar: conv.participant?.profile?.avatar || '/u.jpeg',
-      unread: conv.unreadCount || 0,
-      time: conv.lastMessage?.timestamp || conv.lastMessage?.createdAt ?
-        formatTime(new Date(conv.lastMessage.timestamp || conv.lastMessage.createdAt)) : '',
-      isPinned: conv.isPinned || false,
-      isMuted: conv.isMuted || false,
-      isBlocked: conv.isBlocked || false,
-      isArchived: conv.isArchived || false,
-      isOnline: onlineUsers.includes(conv.participant?._id),
-      participantId: conv.participant?._id
-    }))
+    return conversations.map(conv => {
+      // Generate slug from participant name for URL
+      const firstName = conv.participant?.profile?.firstName || ''
+      const lastName = conv.participant?.profile?.lastName || ''
+      const nameSlug = `${firstName} ${lastName}`
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '') // Remove special characters
+        .replace(/[\s_-]+/g, '-')  // Replace spaces with hyphens
+        .replace(/^-+|-+$/g, '')    // Trim hyphens
+        || 'unknown-user'
+
+      return {
+        id: conv.conversationId,
+        conversationId: conv.conversationId,
+        participantSlug: nameSlug, // Use this in URL instead of conversationId
+        mentorSlug: conv.participant?.mentorProfile?.slug, // For mentor profile navigation
+        mentorId: conv.participant?._id, // Fallback for profile navigation
+        name: conv.participant ?
+          `${conv.participant.profile?.firstName || ''} ${conv.participant.profile?.lastName || ''}`.trim() :
+          'Unknown',
+        message: conv.lastMessage?.content || 'No messages yet',
+        avatar: conv.participant?.profile?.avatar,
+        unread: conv.unreadCount || 0,
+        time: conv.lastMessage?.timestamp || conv.lastMessage?.createdAt ?
+          formatTime(new Date(conv.lastMessage.timestamp || conv.lastMessage.createdAt)) : '',
+        isPinned: conv.isPinned || false,
+        isMuted: conv.isMuted || false,
+        isBlocked: conv.isBlocked || false,
+        isArchived: conv.isArchived || false,
+        isOnline: onlineUsers.includes(conv.participant?._id),
+        participantId: conv.participant?._id
+      }
+    })
   }, [conversations, onlineUsers])
+
+  // Sync selectedChatId with URL query parameter changes (e.g., browser back/forward)
+  // Must be AFTER chats definition to avoid reference error
+  useEffect(() => {
+    const chatIdFromUrl = searchParams.get('chat')
+
+    // If URL changed, resolve slug to conversation ID
+    if (chatIdFromUrl && chatIdFromUrl !== selectedChatId) {
+      // Try to find by slug first, then by ID
+      const matchingChat = chats.find(c => c.participantSlug === chatIdFromUrl) ||
+        chats.find(c => c.conversationId === chatIdFromUrl)
+
+      if (matchingChat) {
+        // Set the actual conversation ID, not the slug
+        setSelectedChatId(matchingChat.conversationId)
+      } else if (!matchingChat && chatIdFromUrl) {
+        // If it's a slug/ID we don't recognize yet, keep it (conversations might still be loading)
+        setSelectedChatId(chatIdFromUrl)
+      }
+    } else if (!chatIdFromUrl && selectedChatId) {
+      // URL cleared, clear selection
+      setSelectedChatId(null)
+    }
+  }, [searchParams, chats, selectedChatId])
 
   // Transform conversation to chat format for ChatView
   const selectedChat = useMemo(() => {
@@ -142,11 +271,30 @@ export default function ChatsPage({
   const handleSelectChat = (chat) => {
     if (!chat) {
       setSelectedChatId(null)
+      // Remove chat query parameter from URL
+      setSearchParams(params => {
+        const newParams = new URLSearchParams(params)
+        newParams.delete('chat')
+        return newParams
+      })
       return
     }
     // Handle both conversation objects and chat objects
     const chatId = chat.conversationId || chat.id
     setSelectedChatId(chatId)
+    // Use participant slug in URL for better readability
+    const urlSlug = chat.participantSlug || chatId
+    console.log('💬 Selecting chat:', {
+      name: chat.name,
+      conversationId: chatId,
+      participantSlug: chat.participantSlug,
+      urlSlug
+    })
+    setSearchParams(params => {
+      const newParams = new URLSearchParams(params)
+      newParams.set('chat', urlSlug)
+      return newParams
+    })
   }
 
   const updateChat = (chatId, patch) => {

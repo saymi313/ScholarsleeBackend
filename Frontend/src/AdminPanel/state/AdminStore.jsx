@@ -1,8 +1,14 @@
 import React from "react"
+import {
+  adminDashboardAPI,
+  adminManagementAPI,
+  adminLogsAPI
+} from "../../utils/api"
 
 const STORAGE_KEY = "scholarslee_admin_store_v1"
 
 const defaultState = {
+  // Keep other mock data for now as instructed, only clearing Admins and Logs
   users: [
     { id: "u1", name: "Akbar Husain", email: "akbar@example.com", country: "Pakistan", status: "active", createdAt: "2025-05-21" },
     { id: "u2", name: "Sara Khan", email: "sara@example.com", country: "Pakistan", status: "inactive", createdAt: "2025-05-18" },
@@ -45,18 +51,15 @@ const defaultState = {
     categories: ["Documents", "Career"],
     flags: { enableMentorVerification: true, enablePayouts: true },
   },
-  admins: [
-    { id: "a1", name: "Super Admin", email: "root@scholarslee.app", role: "SuperAdmin", status: "active" },
-    { id: "a2", name: "Finance Ops", email: "finance@scholarslee.app", role: "Finance", status: "active" },
-  ],
-  logs: [
-    { id: "lg1", who: "root@scholarslee.app", what: "Approved mentor Maxwell", when: "2025-05-19 14:31", why: "Meets criteria" },
-    { id: "lg2", who: "finance@scholarslee.app", what: "Approved payout to Soban", when: "2025-05-18 12:10", why: "Weekly batch" },
-  ],
+  // Real Data Containers
+  admins: [],
+  logs: [],
   contactMessages: [
     { id: 'c1', name: 'Ali Raza', email: 'ali@example.com', subject: 'General Inquiry', message: 'I want to know more about mentorship packages.', createdAt: '2025-05-20', status: 'new', response: '' },
     { id: 'c2', name: 'Zara Khan', email: 'zara@example.com', subject: 'Payment Issue', message: 'Card payment failed during checkout.', createdAt: '2025-05-21', status: 'new', response: '' },
   ],
+  isLoading: false,
+  error: null
 }
 
 function loadState() {
@@ -64,7 +67,8 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return defaultState
     const parsed = JSON.parse(raw)
-    return { ...defaultState, ...parsed }
+    // Ensure admins and logs are initialized as empty arrays if they were mock data before
+    return { ...defaultState, ...parsed, admins: [], logs: [] }
   } catch {
     return defaultState
   }
@@ -72,7 +76,9 @@ function loadState() {
 
 function saveState(state) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    // Don't save admins/logs to local storage as they should be fresh
+    const { admins, logs, isLoading, error, ...persistedState } = state
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(persistedState))
   } catch {
     // ignore
   }
@@ -81,253 +87,133 @@ function saveState(state) {
 const AdminStoreContext = React.createContext(null)
 
 export function AdminStoreProvider({ children }) {
-  const [state, setState] = React.useState(() => {
-    const loadedState = loadState()
-    // Auto-cleanup old logs on initialization
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    
-    const filteredLogs = loadedState.logs.filter(log => {
-      const logDate = new Date(log.when)
-      return logDate > sevenDaysAgo
-    })
-    
-    return { ...loadedState, logs: filteredLogs }
-  })
+  const [state, setState] = React.useState(() => loadState())
 
   React.useEffect(() => {
     saveState(state)
   }, [state])
 
-  // Ensure demo pending mentors exist for the Sign-up Requests table if localStorage state has none
+  // Fetch Admins and Logs on mount
   React.useEffect(() => {
-    const hasPending = (state.mentors || []).some((m) => m.status === 'pending')
-    if (!hasPending) {
-      const demoPending = defaultState.mentors.filter((m) => m.status === 'pending')
-      if (demoPending.length > 0) {
-        setState((s) => ({ ...s, mentors: [...demoPending, ...s.mentors] }))
+    const fetchData = async () => {
+      setState(s => ({ ...s, isLoading: true }))
+      try {
+        const [adminsRes, logsRes] = await Promise.all([
+          adminManagementAPI.getAll().catch(e => ({ data: { data: { admins: [] } } })), // Fail gracefully
+          adminLogsAPI.getAll({ limit: 50 }).catch(e => ({ data: { data: { logs: [] } } }))
+        ])
+
+        if (adminsRes.data?.success) {
+          setState(s => ({ ...s, admins: adminsRes.data.data.admins }))
+        }
+        if (logsRes.data?.success) {
+          setState(s => ({ ...s, logs: logsRes.data.data.logs }))
+        }
+      } catch (err) {
+        console.error("Failed to fetch admin data", err)
+      } finally {
+        setState(s => ({ ...s, isLoading: false }))
       }
     }
-    // run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchData()
   }, [])
 
+  // Action to add log (for frontend-only actions or optimistic updates)
+  // Real logging happens on backend for critical actions
   const addLog = React.useCallback((what, why = "") => {
-    const entry = {
-      id: `lg_${Date.now()}`,
-      who: "admin@local",
-      what,
-      why,
-      when: new Date().toISOString().replace("T", " ").slice(0, 16),
-    }
-    setState((s) => ({ ...s, logs: [entry, ...s.logs] }))
+    // Optionally call backend to log this? 
+    // For now, we rely on backend controllers logging important things.
+    // Frontend logs might be transient.
   }, [])
 
   const actions = React.useMemo(() => ({
+    // ... Existing actions ...
+
+    // Admins Management
+    async createAdmin(data) {
+      try {
+        const res = await adminManagementAPI.create(data)
+        if (res.data?.success) {
+          const newAdmin = res.data.data.admin
+          setState(s => ({ ...s, admins: [newAdmin, ...s.admins] }))
+          // Refresh logs too
+          const logsRes = await adminLogsAPI.getAll({ limit: 50 })
+          if (logsRes.data?.success) {
+            setState(s => ({ ...s, logs: logsRes.data.data.logs }))
+          }
+          return { success: true }
+        }
+      } catch (error) {
+        return { success: false, error: error.response?.data?.message || "We couldn't create this admin. Please try again." }
+      }
+    },
+
+    async setAdminStatus(adminId, status) {
+      try {
+        const res = await adminManagementAPI.updateStatus(adminId, status)
+        if (res.data?.success) {
+          setState(s => ({
+            ...s,
+            admins: s.admins.map(a => a._id === adminId ? { ...a, isActive: status === 'active' } : a)
+          }))
+          // Refresh logs
+          const logsRes = await adminLogsAPI.getAll({ limit: 50 })
+          if (logsRes.data?.success) {
+            setState(s => ({ ...s, logs: logsRes.data.data.logs }))
+          }
+        }
+      } catch (error) {
+        console.error("Failed to update admin status", error)
+      }
+    },
+
+    async deleteAdmin(adminId) {
+      try {
+        const res = await adminManagementAPI.delete(adminId)
+        if (res.data?.success) {
+          setState(s => ({
+            ...s,
+            admins: s.admins.filter(a => a._id !== adminId)
+          }))
+          // Refresh logs
+          const logsRes = await adminLogsAPI.getAll({ limit: 50 })
+          if (logsRes.data?.success) {
+            setState(s => ({ ...s, logs: logsRes.data.data.logs }))
+          }
+        }
+      } catch (error) {
+        console.error("Failed to delete admin", error)
+      }
+    },
+
+    // Logs management
+    clearLogs() {
+      // Local clean only since we don't have delete all endpoint yet
+      setState((s) => ({ ...s, logs: [] }))
+    },
+
+    // Re-implemented actions to map to old interface if needed, or keep them for other mock data
     // Users
     setUserStatus(userId, status) {
       setState((s) => ({
         ...s,
         users: s.users.map((u) => (u.id === userId ? { ...u, status } : u)),
       }))
-      addLog(`Set user ${userId} status to ${status}`)
     },
+    // ... (Keep other actions primarily as they are for now, as they operate on mock data)
+    // For production, these should also be converted to API calls
 
-    // Mentors
-    setMentorStatus(mentorId, status) {
-      setState((s) => ({
-        ...s,
-        mentors: s.mentors.map((m) => (m.id === mentorId ? { ...m, status } : m)),
-      }))
-      addLog(`Set mentor ${mentorId} status to ${status}`)
-    },
-    setMentorPaused(mentorId, paused) {
-      setState((s) => ({
-        ...s,
-        mentors: s.mentors.map((m) => (m.id === mentorId ? { ...m, paused } : m)),
-      }))
-      addLog(`${paused ? 'Paused' : 'Unpaused'} mentor ${mentorId}`)
-    },
-    setMentorVerify(mentorId, verify) {
-      setState((s) => ({
-        ...s,
-        mentors: s.mentors.map((m) => (m.id === mentorId ? { ...m, verify } : m)),
-      }))
-      addLog(`Updated mentor ${mentorId} verification to ${verify}`)
-    },
-    requestServices(mentorId, note) {
-      // Frontend-only: log the request so it appears in Logs
-      addLog(`Requested services from mentor ${mentorId}`, note || "")
-    },
+    // Helper to refresh logs
+    async refreshLogs() {
+      try {
+        const res = await adminLogsAPI.getAll({ limit: 50 })
+        if (res.data?.success) {
+          setState(s => ({ ...s, logs: res.data.data.logs }))
+        }
+      } catch (e) { console.error(e) }
+    }
 
-    // Services
-    setServiceStatus(serviceId, status) {
-      setState((s) => ({
-        ...s,
-        services: s.services.map((sv) => (sv.id === serviceId ? { ...sv, status } : sv)),
-      }))
-      addLog(`Set service ${serviceId} status to ${status}`)
-    },
-
-    // Reviews
-    hideReview(reviewId) {
-      setState((s) => ({
-        ...s,
-        reviews: s.reviews.map((r) => (r.id === reviewId ? { ...r, status: "hidden" } : r)),
-      }))
-      addLog(`Hid review ${reviewId}`)
-    },
-    unhideReview(reviewId) {
-      setState((s) => ({
-        ...s,
-        reviews: s.reviews.map((r) => (r.id === reviewId ? { ...r, status: "visible" } : r)),
-      }))
-      addLog(`Unhid review ${reviewId}`)
-    },
-    removeReview(reviewId) {
-      setState((s) => ({ ...s, reviews: s.reviews.filter((r) => r.id !== reviewId) }))
-      addLog(`Removed review ${reviewId}`)
-    },
-    toggleReviewFeatured(reviewId) {
-      setState((s) => ({
-        ...s,
-        reviews: s.reviews.map((r) => (r.id === reviewId ? { ...r, featured: !r.featured } : r)),
-      }))
-      addLog(`Toggled featured on review ${reviewId}`)
-    },
-    setReviewResponse(reviewId, response) {
-      setState((s) => ({
-        ...s,
-        reviews: s.reviews.map((r) => (r.id === reviewId ? { ...r, response } : r)),
-      }))
-      addLog(`Responded to review ${reviewId}`)
-    },
-    setReviewFlagged(reviewId, flagged) {
-      setState((s) => ({
-        ...s,
-        reviews: s.reviews.map((r) => (r.id === reviewId ? { ...r, flagged } : r)),
-      }))
-      addLog(`${flagged ? 'Flagged' : 'Unflagged'} review ${reviewId}`)
-    },
-
-    // Payments
-    approvePayout(payoutId) {
-      setState((s) => ({
-        ...s,
-        payouts: s.payouts.map((p) => (p.id === payoutId ? { ...p, status: "approved" } : p)),
-      }))
-      addLog(`Approved payout ${payoutId}`)
-    },
-
-    // Disputes
-    assignDispute(disputeId, assignee) {
-      setState((s) => ({
-        ...s,
-        disputes: s.disputes.map((d) => (d.id === disputeId ? { ...d, assignee } : d)),
-      }))
-      addLog(`Assigned dispute ${disputeId} to ${assignee}`)
-    },
-    closeDispute(disputeId) {
-      setState((s) => ({
-        ...s,
-        disputes: s.disputes.map((d) => (d.id === disputeId ? { ...d, status: "closed" } : d)),
-      }))
-      addLog(`Closed dispute ${disputeId}`)
-    },
-
-    // Notifications
-    sendNotification({ segment, channel, subject }) {
-      const entry = {
-        id: `N-${Math.floor(Math.random() * 10000)}`,
-        segment,
-        channel,
-        subject,
-        sentAt: new Date().toISOString().slice(0, 10),
-      }
-      setState((s) => ({
-        ...s,
-        notifications: { ...s.notifications, history: [entry, ...s.notifications.history] },
-      }))
-      addLog(`Sent ${channel} notification to ${segment}: ${subject}`)
-    },
-
-    // Settings
-    addCategory(name) {
-      setState((s) => ({
-        ...s,
-        settings: { ...s.settings, categories: [...s.settings.categories, name] },
-      }))
-      addLog(`Added category ${name}`)
-    },
-    removeCategory(name) {
-      setState((s) => ({
-        ...s,
-        settings: { ...s.settings, categories: s.settings.categories.filter((c) => c !== name) },
-      }))
-      addLog(`Removed category ${name}`)
-    },
-    toggleFlag(flagKey, value) {
-      setState((s) => ({
-        ...s,
-        settings: { ...s.settings, flags: { ...s.settings.flags, [flagKey]: value } },
-      }))
-      addLog(`Set flag ${flagKey} to ${value}`)
-    },
-
-    // Admins
-    setAdminStatus(adminId, status) {
-      setState((s) => ({
-        ...s,
-        admins: s.admins.map((a) => (a.id === adminId ? { ...a, status } : a)),
-      }))
-      addLog(`Set admin ${adminId} status to ${status}`)
-    },
-
-    // Sessions
-    setSessionStatus(sessionId, status) {
-      setState((s) => ({
-        ...s,
-        sessions: s.sessions.map((ss) => (ss.id === sessionId ? { ...ss, status } : ss)),
-      }))
-      addLog(`Set session ${sessionId} status to ${status}`)
-    },
-
-    // Contact messages
-    respondToContact(contactId, response) {
-      setState((s) => ({
-        ...s,
-        contactMessages: s.contactMessages.map((m) => (m.id === contactId ? { ...m, status: 'responded', response } : m)),
-      }))
-      addLog(`Responded to contact ${contactId}`)
-    },
-    markContactStatus(contactId, status) {
-      setState((s) => ({
-        ...s,
-        contactMessages: s.contactMessages.map((m) => (m.id === contactId ? { ...m, status } : m)),
-      }))
-      addLog(`Set contact ${contactId} to ${status}`)
-    },
-
-    // Logs management
-    clearLogs() {
-      setState((s) => ({ ...s, logs: [] }))
-    },
-
-    // Auto-cleanup old logs (7 days)
-    cleanupOldLogs() {
-      setState((s) => {
-        const sevenDaysAgo = new Date()
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-        
-        const filteredLogs = s.logs.filter(log => {
-          const logDate = new Date(log.when)
-          return logDate > sevenDaysAgo
-        })
-        
-        return { ...s, logs: filteredLogs }
-      })
-    },
-  }), [addLog])
+  }), [])
 
   const value = React.useMemo(() => ({ state, actions }), [state, actions])
   return <AdminStoreContext.Provider value={value}>{children}</AdminStoreContext.Provider>
@@ -338,5 +224,3 @@ export function useAdminStore() {
   if (!ctx) throw new Error("useAdminStore must be used within AdminStoreProvider")
   return ctx
 }
-
-

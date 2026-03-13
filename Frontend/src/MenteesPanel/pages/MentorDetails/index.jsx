@@ -13,6 +13,9 @@ import Feedbacks from "../../components/MentorDetailsComponents/Feedbacks"
 import ChatPrivacyPopup from "../../components/ChatsComponents/ChatPrivacyPopup"
 import SEO from "../../../shared/components/SEO"
 import { generateMentorSchema, generateBreadcrumbSchema } from "../../../shared/utils/schema"
+import MentorBadge from "../../components/MentorComponents/MentorBadge" // DELETED
+import ProfileBadge from "../../components/MentorComponents/ProfileBadge"
+import NameAvatar from "../../../shared/components/NameAvatar"
 
 
 const MentorDetails = () => {
@@ -47,13 +50,14 @@ const MentorDetails = () => {
         console.log('📚 Services count:', mentor.services?.length || 0)
         console.log('📚 Services data:', mentor.services)
         setMentorData(mentor)
+        setIsFollowing(mentor.isFollowing || false) // Set initial follow state
         console.log('✅ Mentor data loaded:', mentor)
       } else {
-        setError(response.data?.message || 'Failed to load mentor details')
+        setError(response.data?.message || "We couldn't load this mentor's details. Please try again.")
       }
     } catch (error) {
       console.error('Error loading mentor details:', error)
-      setError('Failed to load mentor details')
+      setError("We couldn't load this mentor's details. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -79,7 +83,7 @@ const MentorDetails = () => {
       const firstName = mentorData.userId?.profile?.firstName || 'Unknown'
       const lastName = mentorData.userId?.profile?.lastName || ''
       const fullName = `${firstName} ${lastName}`.trim()
-      const avatar = mentorData.userId?.profile?.avatar || '/a.jpg'
+      const avatar = mentorData.userId?.profile?.avatar
       const mentorUserId = mentorData.userId?._id || mentorData.userId
 
       navigate(`/mentees/chats?mentorId=${mentorUserId}&name=${encodeURIComponent(fullName)}&avatar=${encodeURIComponent(avatar)}`)
@@ -91,12 +95,52 @@ const MentorDetails = () => {
       const firstName = mentorData.userId?.profile?.firstName || 'Unknown'
       const lastName = mentorData.userId?.profile?.lastName || ''
       const fullName = `${firstName} ${lastName}`.trim()
-      const avatar = mentorData.userId?.profile?.avatar || '/u.jpeg'
+      const avatar = mentorData.userId?.profile?.avatar
       navigate(`/mentees/chats?name=${encodeURIComponent(fullName)}&avatar=${encodeURIComponent(avatar)}`)
     } else {
       navigate("/mentees/chats")
     }
     setShowPrivacyPopup(false)
+  }
+
+  const [loadingFollow, setLoadingFollow] = useState(false)
+
+  // ... (existing code)
+
+
+
+  const handleFollowToggle = async () => {
+    if (!mentorData) return;
+
+    // Optimistic update
+    const previousState = isFollowing;
+    const previousCount = mentorData.followerCount || 0;
+
+    setIsFollowing(!isFollowing);
+    setMentorData(prev => ({
+      ...prev,
+      followerCount: isFollowing ? prev.followerCount - 1 : (prev.followerCount || 0) + 1
+    }));
+
+    setLoadingFollow(true);
+
+    try {
+      if (isFollowing) {
+        await mentorsAPI.unfollow(mentorData._id || mentorData.slug);
+      } else {
+        await mentorsAPI.follow(mentorData._id || mentorData.slug);
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+      // Revert on error
+      setIsFollowing(previousState);
+      setMentorData(prev => ({
+        ...prev,
+        followerCount: previousCount
+      }));
+    } finally {
+      setLoadingFollow(false);
+    }
   }
 
   const handleClosePrivacy = () => {
@@ -118,7 +162,7 @@ const MentorDetails = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600 text-xl mb-4">{error || 'Mentor not found'}</p>
+          <p className="text-red-600 text-xl mb-4">{error || "We couldn't find this mentor's profile. They may no longer be available."}</p>
           <button
             onClick={() => navigate('/mentees/mentors')}
             className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700"
@@ -134,7 +178,7 @@ const MentorDetails = () => {
   const firstName = mentorData.userId?.profile?.firstName || 'Unknown'
   const lastName = mentorData.userId?.profile?.lastName || ''
   const fullName = `${firstName} ${lastName}`.trim()
-  const avatar = mentorData.userId?.profile?.avatar || '/u.jpeg'
+  const avatar = mentorData.userId?.profile?.avatar
   const location = mentorData.userId?.profile?.country || mentorData.location || 'Location not specified'
   const title = mentorData.title || 'Mentor'
   const bio = mentorData.bio || ''
@@ -186,12 +230,20 @@ const MentorDetails = () => {
             {/* Profile Section */}
             <div className="flex flex-col items-center text-center lg:flex-row lg:text-left lg:items-center gap-4 sm:gap-6 min-w-0 w-full">
               <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-32 lg:h-32 rounded-full overflow-hidden border-4 border-white/20 flex-shrink-0">
-                <img src={avatar} alt={fullName} className="w-full h-full object-cover" />
+                <NameAvatar src={avatar} name={fullName} size="w-full h-full" textSize="text-3xl" />
               </div>
               <div className="w-full">
-                <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mb-1 sm:mb-2">{fullName}</h1>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-1 sm:mb-2">
+                  <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">{fullName}</h1>
+                  <div className="flex">
+                    <ProfileBadge badge={mentorData.badge} />
+                  </div>
+                </div>
                 <p className="text-gray-300 mb-2 sm:mb-4 text-sm sm:text-base truncate">{title}</p>
                 <p className="text-gray-400 text-xs sm:text-sm">{location}</p>
+                <div className="flex items-center gap-1 mt-2 text-sm text-gray-400">
+                  <span className="font-semibold text-white">{mentorData.followerCount || 0}</span> followers
+                </div>
                 <div className="flex flex-row gap-2 sm:gap-3 mt-4 sm:mt-6 justify-center lg:justify-start">
                   <button
                     onClick={handleContactClick}
@@ -200,10 +252,17 @@ const MentorDetails = () => {
                     Contact
                   </button>
                   <button
-                    onClick={() => setIsFollowing((prev) => !prev)}
-                    className="border border-white/30 text-white px-3 sm:px-4 py-2 rounded-lg font-semibold hover:bg-white/10 transition-colors"
+                    onClick={handleFollowToggle}
+                    disabled={loadingFollow}
+                    className={`border px-3 sm:px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 ${isFollowing
+                      ? "bg-white text-black border-white hover:bg-gray-100"
+                      : "border-white/30 text-white hover:bg-white/10"
+                      } ${loadingFollow ? "opacity-70 cursor-not-allowed" : ""}`}
                     aria-pressed={isFollowing}
                   >
+                    {loadingFollow ? (
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                    ) : null}
                     {isFollowing ? "Following" : "Follow"}
                   </button>
                 </div>

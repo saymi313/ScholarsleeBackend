@@ -15,7 +15,7 @@ const Services = ({ mentorData }) => {
     description: service.description || '',
     rating: service.rating || 0,
     reviews: service.totalReviews || 0,
-    price: service.packages && service.packages.length > 0 ? `Rs ${service.packages[0].price}` : 'N/A',
+    price: service.packages && service.packages.length > 0 ? `$ ${service.packages[0].price}` : 'N/A',
     image: service.images && service.images.length > 0 ? service.images[0] : null,
     hasVideo: false,
   }))
